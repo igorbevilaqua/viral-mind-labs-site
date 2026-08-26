@@ -147,14 +147,13 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .case-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:16px}
 .case-name{font-size:17px;font-weight:600;color:var(--text)}
 .case-handle{font-size:13px;color:var(--accent);margin-top:2px}
-.case-mockup{position:relative;display:flex;justify-content:center;padding:10px 0 6px}
+.case-mockup{display:flex;justify-content:center;padding:10px 0 6px}
 .case-mockup img{width:76%;max-width:210px;display:block;filter:drop-shadow(0 22px 38px rgba(0,0,0,0.55));transform:rotate(-2.5deg);transition:transform .35s ease}
 .case-card:hover .case-mockup img{transform:rotate(0deg) scale(1.03)}
-.case-antes-badge{position:absolute;top:2px;left:2px;z-index:2;display:flex;flex-direction:column;gap:2px;background:rgba(11,12,10,0.85);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,0.12);border-radius:12px;padding:8px 12px}
-.case-antes-badge .lbl{font-size:9px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,243,238,0.4);font-weight:600}
-.case-antes-badge b{font-family:'Instrument Serif',serif;font-weight:400;font-size:17px;color:rgba(242,243,238,0.8)}
-.case-result{text-align:center;font-size:14px;color:rgba(242,243,238,0.6);padding:12px;background:rgba(245,208,59,0.06);border:1px solid rgba(245,208,59,0.18);border-radius:10px}
-.case-result b{font-family:'Instrument Serif',serif;font-weight:400;font-size:26px;color:var(--accent)}
+.case-result{display:flex;flex-direction:column;align-items:center;gap:8px;text-align:center;padding:16px;background:rgba(245,208,59,0.06);border:1px solid rgba(245,208,59,0.18);border-radius:10px}
+.case-since{font-size:12px;line-height:1.5;color:rgba(242,243,238,0.5)}
+.case-today{font-size:15px;color:rgba(242,243,238,0.75)}
+.case-today b{font-family:'Instrument Serif',serif;font-weight:400;font-size:26px;color:var(--accent);margin-right:6px}
 
 /* ---------- image placeholder ---------- */
 .imgslot{position:relative;overflow:hidden;background:linear-gradient(150deg,#1c1e17,#101208);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center}
