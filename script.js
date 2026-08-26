@@ -72,14 +72,13 @@
     if (el._counting) return;
     el._counting = true;
     const to = parseFloat(el.dataset.countTo);
-    const dur = 2200;
+    const dur = 2600;
     const t0 = performance.now();
     const tick = (now) => {
       const k = Math.min(1, (now - t0) / dur);
       const ease = 1 - Math.pow(1 - k, 4);
-      let v = Math.round(to * ease);
-      if (k < 0.9 && to >= 10) v = v - (v % 1) + Math.floor(Math.random() * Math.min(9, to));
-      el.textContent = Math.min(v, to).toLocaleString("pt-BR");
+      const v = Math.round(to * ease);
+      el.textContent = v.toLocaleString("pt-BR");
       const pop = k > 0.85 ? 1 + Math.sin(((k - 0.85) / 0.15) * Math.PI) * 0.06 : 1;
       el.style.transform = "scale(" + pop.toFixed(3) + ")";
       if (k < 1) requestAnimationFrame(tick);
