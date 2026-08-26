@@ -30,6 +30,11 @@ CLIENTS = [
     ("cliente-8", "thiagofranco"),
     ("cliente-9", "marcospelozato.oficial"),
     ("cliente-10", "dilsonperesjr"),
+    ("cliente-11", "orenatotorres"),
+    ("cliente-12", "leonardocirino"),
+    ("cliente-13", "leonardorn"),
+    ("cliente-14", "fernandopereira.finance"),
+    ("cliente-15", "rafaelrodriguesluiz"),
 ]
 
 OUT_DIR = Path(__file__).resolve().parent.parent / "assets" / "img" / "clientes"
