@@ -43,6 +43,32 @@
     constWrap.style.height = Math.round(620 * s) + "px";
   }
 
+  const caseStacks = Array.from(document.querySelectorAll(".case-stack"));
+  function setCaseShot(el, front) {
+    const scale = 0.9 + 0.1 * front;
+    const offset = (1 - front) * 16;
+    el.style.transform = "scale(" + scale.toFixed(3) + ") translate(" + (offset * 0.4).toFixed(1) + "px," + offset.toFixed(1) + "px)";
+    el.style.opacity = String(0.55 + 0.45 * front);
+    el.style.zIndex = front > 0.5 ? "2" : "1";
+    el.style.boxShadow = front > 0.5 ? "0 24px 48px rgba(0,0,0,0.45)" : "none";
+  }
+  function applyCaseStacks() {
+    const vh = window.innerHeight;
+    const start = vh * 0.85;
+    const end = vh * 0.3;
+    caseStacks.forEach((stack) => {
+      const shotBefore = stack.querySelector(".case-shot.before");
+      const shotAfter = stack.querySelector(".case-shot.after");
+      if (!shotBefore || !shotAfter) return;
+      const r = stack.getBoundingClientRect();
+      const raw = (start - r.top) / (start - end);
+      const p = Math.max(0, Math.min(1, raw));
+      const e = p * p * (3 - 2 * p);
+      setCaseShot(shotBefore, 1 - e);
+      setCaseShot(shotAfter, e);
+    });
+  }
+
   function updateFloatingCta() {
     if (!floatingCta || !hero) return;
     const show = window.scrollY > hero.offsetTop + hero.offsetHeight - 300 && !sent;
@@ -105,6 +131,7 @@
     ticking = false;
     applyHero();
     fitConst();
+    applyCaseStacks();
     updateFloatingCta();
   }
   function onScroll() {
@@ -116,6 +143,7 @@
   window.addEventListener("resize", onScroll, { passive: true });
   applyHero();
   fitConst();
+  applyCaseStacks();
   updateFloatingCta();
 
   // FAQ accordion (one open at a time)

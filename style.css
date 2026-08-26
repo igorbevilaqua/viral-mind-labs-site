@@ -54,7 +54,7 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .hero-kicker{font-family:'Instrument Serif',serif;font-style:italic;font-size:18px;color:rgba(242,243,238,0.55);margin:0 0 16px}
 .hero-title{font-family:'Instrument Serif',serif;font-weight:400;font-size:clamp(42px,5.4vw,74px);line-height:1;margin:0 0 34px;text-align:center;color:var(--text)}
 .hero-title em{color:var(--accent);font-style:italic}
-.hero-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:44px;align-items:center;width:100%}
+.hero-grid{display:grid;grid-template-columns:1fr auto 1fr;gap:44px;align-items:center;justify-items:center;width:100%}
 .hero-label{display:flex;flex-direction:column;gap:6px}
 .hero-label.before{justify-self:end;text-align:right}
 .hero-label.after{justify-self:start;opacity:0.25}
@@ -147,12 +147,11 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .case-card{background:var(--card);border:1px solid rgba(255,255,255,0.07);border-radius:18px;padding:22px;display:flex;flex-direction:column;gap:16px}
 .case-name{font-size:17px;font-weight:600;color:var(--text)}
 .case-handle{font-size:13px;color:var(--accent);margin-top:2px}
-.case-shots{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.case-shot-col{display:flex;flex-direction:column;gap:8px}
-.case-shot-label{font-size:10px;letter-spacing:0.2em;text-transform:uppercase;font-weight:600}
-.case-shot-label.before{color:rgba(242,243,238,0.45)}
-.case-shot-label.after{color:var(--accent)}
-.case-shot{width:100%;aspect-ratio:9/16;border-radius:10px}
+.case-stack{position:relative;width:100%;aspect-ratio:9/16}
+.case-shot{position:absolute;inset:0;border-radius:14px;will-change:transform,opacity}
+.case-shot-badge{position:absolute;top:10px;left:10px;z-index:3;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(11,12,10,0.75);backdrop-filter:blur(4px)}
+.case-shot-badge.before{color:rgba(242,243,238,0.7)}
+.case-shot-badge.after{color:var(--accent);border:1px solid rgba(245,208,59,0.4)}
 .case-growth{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:rgba(245,208,59,0.06);border:1px solid rgba(245,208,59,0.18);border-radius:10px}
 .case-growth .from{font-size:14px;color:rgba(242,243,238,0.6)}
 .case-growth .to{font-size:15px;font-weight:600;color:var(--accent)}
