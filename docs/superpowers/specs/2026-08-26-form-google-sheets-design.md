@@ -8,56 +8,65 @@ numa planilha Google Sheets.
 
 ## Restrição de arquitetura
 Site 100% estático, sem servidor/serverless próprio. Não dá pra colocar
-credencial do Google no JS do cliente (ficaria pública no repo). Abordagem
-escolhida: **Google Apps Script implantado como Web App**, ligado à conta
-Google do usuário — grátis, sem infraestrutura nova, mesma filosofia
-"zero dependência" do resto do projeto.
+credencial do Google no JS do cliente (ficaria pública no repo).
+
+## Abordagem tentada e abandonada: Google Apps Script Web App
+Primeira escolha: script Apps Script implantado como Web App, ligado à
+conta Google do usuário — grátis, sem infraestrutura nova. **Abandonada**:
+o Google bloqueou a autorização com "This app is blocked" (tela de bloqueio
+forte, sem opção "Avançado" pra prosseguir mesmo assim) em duas contas
+Google diferentes, mesmo depois de configurar a tela de consentimento OAuth
+e adicionar usuário de teste. Não foi possível contornar sem acesso mais
+profundo ao Google Cloud Console (criar projeto próprio, publicar app) —
+desproporcional pro problema.
+
+## Abordagem implementada: Google Form escondido
+O Google Forms aceita envios `POST` públicos sem autenticação nenhuma (é
+feito pra isso) — sidesteps o bloqueio de OAuth inteiramente. O Form em si
+**nunca é visto pelo visitante**: existe só como "recebedor" de dados nos
+bastidores, já linkado a uma planilha (Respostas → ícone do Sheets, um
+clique, cria as colunas sozinho). O formulário visível no site continua
+sendo o `#apply-form` de sempre, com o mesmo visual e campos.
 
 Descartadas: serviço terceiro tipo SheetDB/Sheet.best (dados de lead
 passando por fora, dependência de terceiro, limite grátis baixo) e função
-serverless própria (Vercel/Cloudflare — exige infraestrutura nova que o
-projeto não tem hoje, desproporcional pro problema).
+serverless própria (Vercel/Cloudflare — infraestrutura nova desproporcional
+pro problema, mesmo motivo do Apps Script).
 
 ## Limitações conhecidas da abordagem (aceitas conscientemente)
-- **CORS**: Apps Script Web App não deixa o navegador ler a resposta HTTP
-  (limitação do Google, sem contorno sem infra extra). O fetch é feito com
-  `mode: "no-cors"` — a requisição é enviada e o Apps Script processa
-  normalmente, mas o JS do cliente nunca sabe se deu certo ou errado. O
-  formulário mostra "aplicação enviada" assumindo sucesso, no mesmo
-  instante em que dispara o envio — não espera confirmação. Risco: numa
-  falha rara do Apps Script, o usuário veria sucesso mesmo se a linha não
-  foi gravada. Aceitável para um formulário de captação de lead.
-- **Preflight**: `Content-Type: text/plain;charset=utf-8` no fetch (em vez
-  de `application/json`) evita que o navegador dispare uma requisição
-  `OPTIONS` de preflight antes do POST — Apps Script não trata `OPTIONS`
-  bem. O corpo continua sendo uma string JSON; o Apps Script faz o parse.
-- **Honeypot antispam**: como o endpoint fica público, um campo invisível
-  (`website` ou similar, fora da visão/tab-order humana) é adicionado ao
-  form. Se vier preenchido, é bot — o Apps Script descarta o envio
-  silenciosamente (não grava linha, não retorna erro visível a ninguém,
-  já que o cliente não lê a resposta mesmo).
+- **Sem confirmação de sucesso**: Google Forms não devolve resposta legível
+  via CORS. O fetch é feito com `mode: "no-cors"` — a requisição é enviada,
+  mas o JS do cliente nunca sabe se deu certo. O formulário mostra
+  "aplicação enviada" assumindo sucesso, no mesmo instante em que dispara o
+  envio. Aceitável para um formulário de captação de lead.
+- **Honeypot antispam no client**: como não há mais um handler de servidor
+  pra filtrar bots (Forms não roda lógica custom), o campo invisível
+  `website` é checado ANTES de disparar o fetch — se vier preenchido
+  (indício de bot), o envio pro Form é simplesmente pulado.
+- **IDs de campo (`entry.NNNNNN`) são amarrados ao Form específico**: se o
+  Form for recriado do zero (não apenas editado), os IDs mudam e a
+  integração quebra silenciosamente (o `no-cors` esconde o erro). Editar
+  perguntas existentes do Form já criado é seguro; recriar do zero exige
+  atualizar `GOOGLE_FORM_FIELDS` em `script.js` de novo.
 
-## Colunas da planilha
-Criadas automaticamente pelo Apps Script na primeira execução (cabeçalho),
-na ordem: `Timestamp`, `Nome`, `Empresa`, `WhatsApp`, `Email`, `Ramo`,
-`Instagram`, `Faturamento`, `Observações`.
+## Mapeamento de campos (Form ID `1FAIpQLSetH1auyxxWYH-HGRI9sl1i5cI55E6BNJ7fO3WJqtkKsPSkuA`)
+| Campo do site | Pergunta no Form | entry ID |
+|---|---|---|
+| nome | Nome | entry.1511593986 |
+| empresa | Empresa | entry.92333426 |
+| whatsapp | Whatsapp | entry.223572430 |
+| email | Email | entry.1316463294 |
+| ramo | Ramo | entry.2079113110 |
+| instagram | Perfil no Instagram (@ ou URL) | entry.611997242 |
+| faturamento | Faturamento | entry.1547981891 |
+| obs | Observações | entry.668118878 |
 
-## Divisão de responsabilidade (o que cada lado faz)
-- **Eu escrevo agora**: o código do Apps Script (`scripts/apps-script-form-handler.gs`,
-  mantido no repo só como referência/histórico — não é deployado por git,
-  é colado manualmente no editor do Apps Script), o campo honeypot no HTML,
-  e a integração no `script.js` (fetch no submit do form), com a URL do Web
-  App como uma constante clara `SHEETS_WEBHOOK_URL = "COLE_AQUI"` fácil de
-  substituir depois.
-- **Usuário faz depois** (só ele tem acesso à própria conta Google):
-  1. Abrir a planilha em branco já criada.
-  2. Extensões → Apps Script.
-  3. Colar o conteúdo de `scripts/apps-script-form-handler.gs`.
-  4. Implantar → Nova implantação → tipo "Web App" → Executar como "Eu" →
-     Quem tem acesso "Qualquer pessoa".
-  5. Copiar a URL gerada e me passar de volta.
-  6. Eu troco o placeholder `SHEETS_WEBHOOK_URL` pela URL real e dou o
-     release.
+Ação de envio: `https://docs.google.com/forms/d/e/1FAIpQLSetH1auyxxWYH-HGRI9sl1i5cI55E6BNJ7fO3WJqtkKsPSkuA/formResponse`
+(POST `application/x-www-form-urlencoded`, chaves = entry IDs acima).
+
+## Onde está implementado
+`script.js` — `GOOGLE_FORM_ACTION`, `GOOGLE_FORM_FIELDS`, e o listener de
+`submit` do `#apply-form` (monta o body, checa honeypot, dispara fetch).
 
 ## Fora de escopo
 Notificação por e-mail/WhatsApp a cada novo lead, dashboard, deduplicação

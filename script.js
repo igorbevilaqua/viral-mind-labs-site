@@ -144,9 +144,20 @@
   const consentErr = document.getElementById("consent-err");
   const formView = document.getElementById("form-view");
   const formSent = document.getElementById("form-sent");
-  // Google Apps Script Web App URL — cole aqui depois de implantar
-  // (ver docs/superpowers/specs/2026-08-26-form-google-sheets-design.md)
-  const SHEETS_WEBHOOK_URL = "COLE_AQUI_A_URL_DO_APPS_SCRIPT";
+  // Google Form escondido que alimenta a planilha (ver
+  // docs/superpowers/specs/2026-08-26-form-google-sheets-design.md) —
+  // Apps Script Web App foi abandonado por bloqueio de OAuth do Google.
+  const GOOGLE_FORM_ACTION = "https://docs.google.com/forms/d/e/1FAIpQLSetH1auyxxWYH-HGRI9sl1i5cI55E6BNJ7fO3WJqtkKsPSkuA/formResponse";
+  const GOOGLE_FORM_FIELDS = {
+    nome: "entry.1511593986",
+    empresa: "entry.92333426",
+    whatsapp: "entry.223572430",
+    email: "entry.1316463294",
+    ramo: "entry.2079113110",
+    instagram: "entry.611997242",
+    faturamento: "entry.1547981891",
+    obs: "entry.668118878",
+  };
 
   if (form) {
     cienteInput.addEventListener("change", () => consentErr.classList.remove("is-visible"));
@@ -156,27 +167,24 @@
         consentErr.classList.add("is-visible");
         return;
       }
-      const faturamentoSelect = document.getElementById("f-faturamento");
-      const payload = {
-        website: form.website.value, // honeypot — bot preenche, humano não vê
-        nome: form.nome.value,
-        empresa: form.empresa.value,
-        whatsapp: form.whatsapp.value,
-        email: form.email.value,
-        ramo: form.ramo.value,
-        instagram: form.instagram.value,
-        faturamento: faturamentoSelect.selectedOptions[0] ? faturamentoSelect.selectedOptions[0].text : "",
-        obs: form.obs.value,
-      };
-      if (SHEETS_WEBHOOK_URL.indexOf("http") === 0) {
-        // no-cors: o Apps Script não devolve header de CORS, então a
+      if (!form.hp_check.value) {
+        // honeypot vazio = humano; se um bot preencheu, pula o envio
+        const faturamentoSelect = document.getElementById("f-faturamento");
+        const values = {
+          nome: form.nome.value,
+          empresa: form.empresa.value,
+          whatsapp: form.whatsapp.value,
+          email: form.email.value,
+          ramo: form.ramo.value,
+          instagram: form.instagram.value,
+          faturamento: faturamentoSelect.selectedOptions[0] ? faturamentoSelect.selectedOptions[0].text : "",
+          obs: form.obs.value,
+        };
+        const body = new URLSearchParams();
+        Object.keys(GOOGLE_FORM_FIELDS).forEach((key) => body.append(GOOGLE_FORM_FIELDS[key], values[key]));
+        // no-cors: o Google Forms não devolve header de CORS, então a
         // resposta não pode ser lida — dispara e assume sucesso (ver spec).
-        fetch(SHEETS_WEBHOOK_URL, {
-          method: "POST",
-          mode: "no-cors",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify(payload),
-        }).catch(() => {});
+        fetch(GOOGLE_FORM_ACTION, { method: "POST", mode: "no-cors", body }).catch(() => {});
       }
       formView.style.display = "none";
       formSent.style.display = "block";
