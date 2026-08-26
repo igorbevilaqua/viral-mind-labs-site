@@ -149,12 +149,14 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .case-handle{font-size:13px;color:var(--accent);margin-top:2px}
 .case-stack{position:relative;width:100%;aspect-ratio:9/16}
 .case-shot{position:absolute;inset:0;border-radius:14px;will-change:transform,opacity}
+.case-shot.before img{filter:grayscale(88%) brightness(0.78) contrast(0.95)}
+.case-shot.after img{filter:saturate(1.08)}
 .case-shot-badge{position:absolute;top:10px;left:10px;z-index:3;font-size:10px;letter-spacing:0.2em;text-transform:uppercase;font-weight:600;padding:5px 10px;border-radius:999px;background:rgba(11,12,10,0.75);backdrop-filter:blur(4px)}
 .case-shot-badge.before{color:rgba(242,243,238,0.7)}
 .case-shot-badge.after{color:var(--accent);border:1px solid rgba(245,208,59,0.4)}
 .case-growth{display:flex;align-items:center;justify-content:center;gap:10px;padding:12px;background:rgba(245,208,59,0.06);border:1px solid rgba(245,208,59,0.18);border-radius:10px}
 .case-growth .from{font-size:14px;color:rgba(242,243,238,0.6)}
-.case-growth .to{font-size:15px;font-weight:600;color:var(--accent)}
+.case-growth .to{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;color:var(--accent)}
 
 /* ---------- image placeholder ---------- */
 .imgslot{position:relative;overflow:hidden;background:linear-gradient(150deg,#1c1e17,#101208);border:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center}

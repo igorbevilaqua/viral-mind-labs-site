@@ -50,7 +50,9 @@
     el.style.transform = "scale(" + scale.toFixed(3) + ") translate(" + (offset * 0.4).toFixed(1) + "px," + offset.toFixed(1) + "px)";
     el.style.opacity = String(0.55 + 0.45 * front);
     el.style.zIndex = front > 0.5 ? "2" : "1";
-    el.style.boxShadow = front > 0.5 ? "0 24px 48px rgba(0,0,0,0.45)" : "none";
+    const isAfter = el.classList.contains("after");
+    const glow = isAfter && front > 0.5 ? ", 0 0 40px rgba(245,208,59," + (0.3 * front).toFixed(2) + ")" : "";
+    el.style.boxShadow = front > 0.5 ? "0 24px 48px rgba(0,0,0,0.45)" + glow : "none";
   }
   function applyCaseStacks() {
     const vh = window.innerHeight;
