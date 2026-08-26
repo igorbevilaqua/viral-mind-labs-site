@@ -11,9 +11,6 @@
   const lblA = document.getElementById("lblA");
   const constWrap = document.getElementById("const-wrap");
   const constEl = document.getElementById("const");
-  const floatingCta = document.getElementById("floating-cta");
-
-  let sent = false;
 
   function applyHero() {
     if (!hero || !phone) return;
@@ -43,10 +40,18 @@
     constWrap.style.height = Math.round(620 * s) + "px";
   }
 
-  function updateFloatingCta() {
-    if (!floatingCta || !hero) return;
-    const show = window.scrollY > hero.offsetTop + hero.offsetHeight - 300 && !sent;
-    floatingCta.classList.toggle("is-visible", show);
+  const caseMockups = Array.from(document.querySelectorAll(".case-mockup img"));
+  function applyCaseTilt() {
+    const vh = window.innerHeight;
+    const start = vh * 0.92;
+    const end = vh * 0.4;
+    caseMockups.forEach((img) => {
+      const r = img.getBoundingClientRect();
+      const raw = (start - r.top) / (start - end);
+      const p = Math.max(0, Math.min(1, raw));
+      const e = p * p * (3 - 2 * p);
+      img.style.setProperty("--tilt", (-9 + e * 6.5).toFixed(2) + "deg");
+    });
   }
 
   // reveal-on-scroll
@@ -105,7 +110,7 @@
     ticking = false;
     applyHero();
     fitConst();
-    updateFloatingCta();
+    applyCaseTilt();
   }
   function onScroll() {
     if (ticking) return;
@@ -116,7 +121,7 @@
   window.addEventListener("resize", onScroll, { passive: true });
   applyHero();
   fitConst();
-  updateFloatingCta();
+  applyCaseTilt();
 
   // FAQ accordion (one open at a time)
   document.querySelectorAll(".faq-item").forEach((item) => {
@@ -151,8 +156,6 @@
       // (fetch to an API route / Supabase table) when the endpoint exists.
       formView.style.display = "none";
       formSent.style.display = "block";
-      sent = true;
-      updateFloatingCta();
     });
   }
 })();
