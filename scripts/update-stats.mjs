@@ -50,7 +50,9 @@ function fmt(v) {
   return Math.round(v).toLocaleString("pt-BR");
 }
 
-const [stats, clientes] = await Promise.all([rpc(DATA, "vm_site_stats"), rpc(CRM, "vm_site_clients")]);
+const [stats, crm] = await Promise.all([rpc(DATA, "vm_site_stats"), rpc(CRM, "vm_site_clients")]);
+const clientes = crm.clientes;
+const agregado = crm.agregado;
 
 // ---- trava de sanidade: dado ruim não vira número errado no ar ----
 const views = Math.floor(stats.views_totais / 1e6);
@@ -106,19 +108,19 @@ for (const [handle, c] of porHandle) {
   }
 }
 
-// ---- selo agregado da constelação (soma do que está exibido) ----
-const nums = [...html.matchAll(/<span class="num" data-ig="([^"]+)"[^>]*>([^<]*)<\/span>/g)];
-const parse = (t) => {
-  const n = parseFloat(t.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, ""));
-  return /M/.test(t) ? n * 1e6 : /mil/.test(t) ? n * 1000 : n;
-};
-const somaVisivel = nums.reduce((acc, m) => acc + (parse(m[2]) || 0), 0);
-if (somaVisivel > 1e6) {
-  const somaFmt = (somaVisivel / 1e6).toFixed(1).replace(".", ",") + "M";
+// ---- selo agregado: carteira ATIVA inteira, não só os rostos exibidos ----
+// (o design original já dizia "22 autoridades" mostrando 10 balões — o selo
+// fala da carteira, a constelação é uma amostra dela)
+const totalAtivos = agregado?.total_ativos;
+const somaAtivos = agregado?.soma_seguidores;
+if (Number.isFinite(totalAtivos) && totalAtivos > 0 && Number.isFinite(somaAtivos) && somaAtivos > 1e6) {
+  const somaFmt = (somaAtivos / 1e6).toFixed(1).replace(".", ",") + "M";
   troca(new RegExp(`(<b>)[^<]*(</b>\\s*<span class="lbl">seguidores somados)`), somaFmt, "selo constelação");
   troca(new RegExp(`(<div class="clientes-mobile-stat"><b>)[^<]*(</b>)`), somaFmt, "selo mobile");
-  troca(new RegExp(`(<span class="sub">)\\d+( autoridades</span>)`), nums.length, "contagem constelação");
-  troca(new RegExp(`(seguidores somados · )\\d+( autoridades)`), nums.length, "contagem mobile");
+  troca(new RegExp(`(<span class="sub">)\\d+( autoridades</span>)`), totalAtivos, "contagem constelação");
+  troca(new RegExp(`(seguidores somados · )\\d+( autoridades)`), totalAtivos, "contagem mobile");
+} else {
+  console.warn("agregado ausente ou suspeito — selo da constelação mantido como está");
 }
 
 if (html === original) {
