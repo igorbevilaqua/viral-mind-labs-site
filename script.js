@@ -12,6 +12,13 @@
   const constWrap = document.getElementById("const-wrap");
   const constEl = document.getElementById("const");
 
+  // números do mockup que sobem junto com o morph antes/depois
+  const morphEls = Array.from(document.querySelectorAll("[data-morph-to]"));
+  function fmtCount(v) {
+    if (v >= 10000) return Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
+    return Math.round(v).toLocaleString("pt-BR");
+  }
+
   function applyHero() {
     if (!hero || !phone) return;
     const total = Math.max(hero.offsetHeight - window.innerHeight, 1);
@@ -20,6 +27,11 @@
 
     if (before) before.style.opacity = String(1 - e);
     if (after) after.style.opacity = String(e);
+    morphEls.forEach((el) => {
+      const from = parseFloat(el.dataset.morphFrom);
+      const to = parseFloat(el.dataset.morphTo);
+      el.textContent = fmtCount(from + (to - from) * e);
+    });
     if (hint) hint.style.display = window.innerHeight < 720 ? "none" : "flex";
 
     const s = Math.max(0.24, Math.min(0.62, (window.innerHeight - 384) / 874));
