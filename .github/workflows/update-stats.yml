@@ -1,0 +1,36 @@
+name: Atualiza números do site
+
+# Segunda-feira, 12:00 UTC (9h de Brasília). O push resultante dispara
+# o deploy automático da Hostinger, como qualquer outro commit na main.
+on:
+  schedule:
+    - cron: "0 12 * * 1"
+  workflow_dispatch: # permite rodar na mão pela aba Actions
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Buscar números do banco e atualizar o HTML
+        run: node scripts/update-stats.mjs
+
+      - name: Commitar se algo mudou
+        run: |
+          if [[ -z "$(git status --porcelain index.html)" ]]; then
+            echo "Números iguais aos da semana passada, nada a commitar."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "chore: atualiza números do site com dados do banco [skip ci]"
+          git push
