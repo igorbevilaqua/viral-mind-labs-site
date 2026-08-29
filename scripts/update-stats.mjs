@@ -5,7 +5,7 @@
 // Atualiza:
 //   - seção "Números" (views totais, clientes ativos, maior vídeo)
 //   - cases de sucesso (antes -> hoje), via data-ig-from / data-ig-to
-//   - constelação, grid mobile e chips de clientes, via data-ig / data-ig-chip
+//   - constelação e grid mobile de clientes, via data-ig
 //
 // As chaves abaixo são publishable keys — públicas por design (as mesmas que
 // iriam no JS do navegador). As funções vm_site_stats/vm_site_clients só
@@ -46,7 +46,8 @@ function fmt(v) {
     return (m >= 10 ? Math.round(m).toString() : m.toFixed(1).replace(".", ",")) + "M";
   }
   if (v >= 1e5) return Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
-  if (v >= 1e4) return (v / 1000).toFixed(1).replace(".", ",") + " mil";
+  // ",0" não agrega nada: 50000 vira "50 mil", não "50,0 mil"
+  if (v >= 1e4) return (v / 1000).toFixed(1).replace(/\.0$/, "").replace(".", ",") + " mil";
   return Math.round(v).toLocaleString("pt-BR");
 }
 
@@ -101,7 +102,6 @@ for (const [handle, c] of porHandle) {
   const h = handle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   troca(new RegExp(`(<span class="num" data-ig="${h}"[^>]*>)[^<]*(</span>)`), fmt(c.atual), `constelação ${handle}`);
   troca(new RegExp(`(<span class="ca-num" data-ig="${h}">)[^<]*(</span>)`), fmt(c.atual), `grid mobile ${handle}`);
-  troca(new RegExp(`(<a class="tag rest" data-ig-chip="${h}"[^>]*>@${h} · )[^<]*(</a>)`), fmt(c.atual), `chip ${handle}`);
   troca(new RegExp(`(<span class="to" data-ig-to="${h}">)[^<]*(</span>)`), `${fmt(c.atual)} seguidores`, `case hoje ${handle}`);
   if (typeof c.inicial === "number" && c.inicial > 0) {
     troca(new RegExp(`(<span class="from" data-ig-from="${h}">)[^<]*(</span>)`), fmt(c.inicial), `case antes ${handle}`);
