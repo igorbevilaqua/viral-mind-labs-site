@@ -44,7 +44,9 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 
 
 /* ---------- hero ---------- */
-#hero{height:230vh;position:relative}
+/* !important vence o section{padding:...!important} do media query de 600px:
+   o espaçamento do hero vem todo do .hero-sticky, não do padding de section */
+#hero{height:230vh;position:relative;padding:0!important}
 .hero-sticky{position:sticky;top:0;height:100vh;overflow:hidden;display:flex;align-items:center;justify-content:center;padding-top:84px;padding-bottom:24px;box-sizing:border-box}
 .hero-glow{position:absolute;inset:0;background:radial-gradient(900px 600px at 72% 42%,rgba(245,208,59,0.07),transparent 60%)}
 .hero-inner{width:min(1100px,92vw);display:flex;flex-direction:column;align-items:center;position:relative}
