@@ -17,6 +17,10 @@
   // pathLength="100" no SVG deixa o traço ser medido em %, sem getTotalLength()
   const sparkLine = document.getElementById("spark-line");
   function fmtCount(v) {
+    // 999500+ vira "mi" pra não exibir o feio "1.000 mil" no arredondamento
+    if (v >= 999500) {
+      return (v / 1e6).toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 }) + " mi";
+    }
     if (v >= 10000) return Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
     return Math.round(v).toLocaleString("pt-BR");
   }
