@@ -106,7 +106,6 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .ig-stats.after .ig-stat b{font-size:17px;color:#fff}
 .ig-stats.after .ig-stat span{color:#a8a8a8}
 .ig-stats.after .ig-stat .ig-follow-count{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;color:var(--accent);line-height:1;display:block}
-.ig-stats.after .ig-stat .ig-growth{display:block;margin-top:3px;font-size:9px;font-weight:700;letter-spacing:0.02em;color:var(--accent);white-space:nowrap}
 .ig-spark{margin:14px 4px 0;padding:8px 10px 4px;background:rgba(245,208,59,0.05);border:1px solid rgba(245,208,59,0.16);border-radius:10px}
 .ig-spark-lbl{display:block;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,243,238,0.45);font-weight:600;margin-bottom:4px}
 .ig-spark svg{display:block;width:100%;height:30px}
