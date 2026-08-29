@@ -243,6 +243,12 @@ form{display:grid;grid-template-columns:1fr 1fr;gap:22px}
 .field{display:flex;flex-direction:column}
 .field.full{grid-column:1 / -1}
 .field label{display:block;font-size:13px;color:rgba(242,243,238,0.65);margin-bottom:8px}
+.tel-group{display:flex;gap:8px}
+.tel-group select{flex:0 0 138px;min-width:0}
+.tel-group input{flex:1;min-width:0}
+.field-err{display:none;font-size:12px;line-height:1.5;color:#FF8A7A;margin-top:6px}
+.field-err.is-visible{display:block}
+.field .invalid{border-color:#FF8A7A}
 .field input,.field select,.field textarea{width:100%;box-sizing:border-box;background:var(--card);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:14px 16px;color:var(--text);font-size:15px;outline:none}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent)}
 .field select{appearance:none}

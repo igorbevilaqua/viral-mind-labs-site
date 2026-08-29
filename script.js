@@ -178,10 +178,71 @@
     obs: "entry.668118878",
   };
 
+  const ddiSelect = document.getElementById("f-ddi");
+  const telInput = document.getElementById("f-whatsapp");
+  const emailInput = document.getElementById("f-email");
+  const errTel = document.getElementById("err-whatsapp");
+  const errEmail = document.getElementById("err-email");
+
+  const soDigitos = (s) => s.replace(/\D/g, "");
+  const ehBrasil = () => ddiSelect && ddiSelect.value === "55";
+
+  // máscara só faz sentido no formato brasileiro; fora dele os padrões variam demais
+  function mascaraBR(d) {
+    if (d.length <= 2) return d.length ? `(${d}` : "";
+    const ddd = d.slice(0, 2);
+    const resto = d.slice(2, 11);
+    if (!resto) return `(${ddd}) `;
+    const corte = resto.length > 8 ? 5 : 4; // celular (9 díg.) vs fixo (8 díg.)
+    return resto.length <= corte ? `(${ddd}) ${resto}` : `(${ddd}) ${resto.slice(0, corte)}-${resto.slice(corte)}`;
+  }
+
+  function telValido() {
+    const n = soDigitos(telInput.value).length;
+    return ehBrasil() ? n === 10 || n === 11 : n >= 6 && n <= 15;
+  }
+  // type="email" aceita "a@b"; aqui exige domínio com ponto e TLD de 2+ letras
+  const emailValido = () => /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-zA-Z]{2,}$/.test(emailInput.value.trim());
+
+  function marca(campo, erro, ok, msg) {
+    campo.classList.toggle("invalid", !ok);
+    if (erro) {
+      erro.classList.toggle("is-visible", !ok);
+      if (!ok && msg) erro.textContent = msg;
+    }
+    return ok;
+  }
+
+  if (telInput) {
+    telInput.addEventListener("input", () => {
+      if (ehBrasil()) telInput.value = mascaraBR(soDigitos(telInput.value).slice(0, 11));
+      if (telInput.classList.contains("invalid")) marca(telInput, errTel, telValido());
+    });
+    ddiSelect.addEventListener("change", () => {
+      telInput.value = ehBrasil() ? mascaraBR(soDigitos(telInput.value).slice(0, 11)) : soDigitos(telInput.value);
+      telInput.placeholder = ehBrasil() ? "(11) 99999-9999" : "Número com DDD, só dígitos";
+      marca(telInput, errTel, true);
+    });
+  }
+  if (emailInput) {
+    emailInput.addEventListener("input", () => {
+      if (emailInput.classList.contains("invalid")) marca(emailInput, errEmail, emailValido());
+    });
+  }
+
   if (form) {
     cienteInput.addEventListener("change", () => consentErr.classList.remove("is-visible"));
     form.addEventListener("submit", (e) => {
       e.preventDefault();
+
+      const telOk = marca(telInput, errTel, telValido(),
+        ehBrasil() ? "Informe DDD + número (10 ou 11 dígitos)." : "Informe o número completo do país selecionado.");
+      const mailOk = marca(emailInput, errEmail, emailValido(),
+        "Informe um e-mail válido, com domínio completo (ex.: nome@empresa.com.br).");
+      if (!telOk || !mailOk) {
+        (telOk ? emailInput : telInput).focus();
+        return;
+      }
       if (!cienteInput.checked) {
         consentErr.classList.add("is-visible");
         return;
@@ -192,7 +253,8 @@
         const values = {
           nome: form.nome.value,
           empresa: form.empresa.value,
-          whatsapp: form.whatsapp.value,
+          // DDI junto do número: mantém o mesmo campo do Google Form
+          whatsapp: `+${ddiSelect.value} ${telInput.value}`.trim(),
           email: form.email.value,
           ramo: form.ramo.value,
           instagram: form.instagram.value,

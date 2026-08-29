@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=9">
+<link rel="stylesheet" href="style.css?v=10">
 </head>
 <body>
 
@@ -528,8 +528,242 @@
         <div class="field-hp" aria-hidden="true"><label for="f-hp">Deixe em branco</label><input id="f-hp" name="hp_check" type="text" tabindex="-1" autocomplete="off"></div>
         <div class="field"><label for="f-nome">Seu nome</label><input id="f-nome" name="nome" required placeholder="Nome completo"></div>
         <div class="field"><label for="f-empresa">Sua empresa</label><input id="f-empresa" name="empresa" required placeholder="Nome da empresa"></div>
-        <div class="field"><label for="f-whatsapp">WhatsApp</label><input id="f-whatsapp" name="whatsapp" required placeholder="(00) 00000-0000"></div>
-        <div class="field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" required placeholder="voce@empresa.com.br"></div>
+        <div class="field">
+          <label for="f-whatsapp">WhatsApp</label>
+          <div class="tel-group">
+            <select id="f-ddi" aria-label="Código do país">
+          <optgroup label="Mais comuns">
+            <option value="55" data-iso="BR" selected>🇧🇷 Brasil +55</option>
+            <option value="351" data-iso="PT">🇵🇹 Portugal +351</option>
+            <option value="1" data-iso="US">🇺🇸 Estados Unidos +1</option>
+            <option value="34" data-iso="ES">🇪🇸 Espanha +34</option>
+            <option value="44" data-iso="GB">🇬🇧 Reino Unido +44</option>
+            <option value="39" data-iso="IT">🇮🇹 Itália +39</option>
+            <option value="49" data-iso="DE">🇩🇪 Alemanha +49</option>
+            <option value="33" data-iso="FR">🇫🇷 França +33</option>
+            <option value="1" data-iso="CA">🇨🇦 Canadá +1</option>
+            <option value="41" data-iso="CH">🇨🇭 Suíça +41</option>
+            <option value="353" data-iso="IE">🇮🇪 Irlanda +353</option>
+            <option value="61" data-iso="AU">🇦🇺 Austrália +61</option>
+            <option value="81" data-iso="JP">🇯🇵 Japão +81</option>
+            <option value="971" data-iso="AE">🇦🇪 Emirados Árabes Unidos +971</option>
+            <option value="54" data-iso="AR">🇦🇷 Argentina +54</option>
+            <option value="595" data-iso="PY">🇵🇾 Paraguai +595</option>
+            <option value="31" data-iso="NL">🇳🇱 Países Baixos +31</option>
+          </optgroup>
+          <optgroup label="Todos os países">
+            <option value="93" data-iso="AF">🇦🇫 Afeganistão +93</option>
+            <option value="355" data-iso="AL">🇦🇱 Albânia +355</option>
+            <option value="49" data-iso="DE">🇩🇪 Alemanha +49</option>
+            <option value="376" data-iso="AD">🇦🇩 Andorra +376</option>
+            <option value="244" data-iso="AO">🇦🇴 Angola +244</option>
+            <option value="1264" data-iso="AI">🇦🇮 Anguilla +1264</option>
+            <option value="1268" data-iso="AG">🇦🇬 Antígua e Barbuda +1268</option>
+            <option value="54" data-iso="AR">🇦🇷 Argentina +54</option>
+            <option value="213" data-iso="DZ">🇩🇿 Argélia +213</option>
+            <option value="374" data-iso="AM">🇦🇲 Armênia +374</option>
+            <option value="297" data-iso="AW">🇦🇼 Aruba +297</option>
+            <option value="966" data-iso="SA">🇸🇦 Arábia Saudita +966</option>
+            <option value="61" data-iso="AU">🇦🇺 Austrália +61</option>
+            <option value="994" data-iso="AZ">🇦🇿 Azerbaijão +994</option>
+            <option value="1242" data-iso="BS">🇧🇸 Bahamas +1242</option>
+            <option value="973" data-iso="BH">🇧🇭 Bahrein +973</option>
+            <option value="880" data-iso="BD">🇧🇩 Bangladesh +880</option>
+            <option value="1246" data-iso="BB">🇧🇧 Barbados +1246</option>
+            <option value="501" data-iso="BZ">🇧🇿 Belize +501</option>
+            <option value="229" data-iso="BJ">🇧🇯 Benin +229</option>
+            <option value="1441" data-iso="BM">🇧🇲 Bermudas +1441</option>
+            <option value="375" data-iso="BY">🇧🇾 Bielorrússia +375</option>
+            <option value="591" data-iso="BO">🇧🇴 Bolívia +591</option>
+            <option value="267" data-iso="BW">🇧🇼 Botsuana +267</option>
+            <option value="55" data-iso="BR">🇧🇷 Brasil +55</option>
+            <option value="673" data-iso="BN">🇧🇳 Brunei +673</option>
+            <option value="359" data-iso="BG">🇧🇬 Bulgária +359</option>
+            <option value="226" data-iso="BF">🇧🇫 Burkina Faso +226</option>
+            <option value="257" data-iso="BI">🇧🇮 Burundi +257</option>
+            <option value="975" data-iso="BT">🇧🇹 Butão +975</option>
+            <option value="32" data-iso="BE">🇧🇪 Bélgica +32</option>
+            <option value="387" data-iso="BA">🇧🇦 Bósnia e Herzegovina +387</option>
+            <option value="238" data-iso="CV">🇨🇻 Cabo Verde +238</option>
+            <option value="237" data-iso="CM">🇨🇲 Camarões +237</option>
+            <option value="855" data-iso="KH">🇰🇭 Camboja +855</option>
+            <option value="1" data-iso="CA">🇨🇦 Canadá +1</option>
+            <option value="974" data-iso="QA">🇶🇦 Catar +974</option>
+            <option value="7" data-iso="KZ">🇰🇿 Cazaquistão +7</option>
+            <option value="235" data-iso="TD">🇹🇩 Chade +235</option>
+            <option value="56" data-iso="CL">🇨🇱 Chile +56</option>
+            <option value="86" data-iso="CN">🇨🇳 China +86</option>
+            <option value="357" data-iso="CY">🇨🇾 Chipre +357</option>
+            <option value="57" data-iso="CO">🇨🇴 Colômbia +57</option>
+            <option value="269" data-iso="KM">🇰🇲 Comores +269</option>
+            <option value="242" data-iso="CG">🇨🇬 Congo +242</option>
+            <option value="243" data-iso="CD">🇨🇩 Congo (RDC) +243</option>
+            <option value="850" data-iso="KP">🇰🇵 Coreia do Norte +850</option>
+            <option value="82" data-iso="KR">🇰🇷 Coreia do Sul +82</option>
+            <option value="506" data-iso="CR">🇨🇷 Costa Rica +506</option>
+            <option value="225" data-iso="CI">🇨🇮 Costa do Marfim +225</option>
+            <option value="385" data-iso="HR">🇭🇷 Croácia +385</option>
+            <option value="53" data-iso="CU">🇨🇺 Cuba +53</option>
+            <option value="599" data-iso="CW">🇨🇼 Curaçao +599</option>
+            <option value="45" data-iso="DK">🇩🇰 Dinamarca +45</option>
+            <option value="253" data-iso="DJ">🇩🇯 Djibuti +253</option>
+            <option value="1767" data-iso="DM">🇩🇲 Dominica +1767</option>
+            <option value="20" data-iso="EG">🇪🇬 Egito +20</option>
+            <option value="503" data-iso="SV">🇸🇻 El Salvador +503</option>
+            <option value="971" data-iso="AE">🇦🇪 Emirados Árabes Unidos +971</option>
+            <option value="593" data-iso="EC">🇪🇨 Equador +593</option>
+            <option value="291" data-iso="ER">🇪🇷 Eritreia +291</option>
+            <option value="421" data-iso="SK">🇸🇰 Eslováquia +421</option>
+            <option value="386" data-iso="SI">🇸🇮 Eslovênia +386</option>
+            <option value="34" data-iso="ES">🇪🇸 Espanha +34</option>
+            <option value="268" data-iso="SZ">🇸🇿 Essuatíni +268</option>
+            <option value="1" data-iso="US">🇺🇸 Estados Unidos +1</option>
+            <option value="372" data-iso="EE">🇪🇪 Estônia +372</option>
+            <option value="251" data-iso="ET">🇪🇹 Etiópia +251</option>
+            <option value="679" data-iso="FJ">🇫🇯 Fiji +679</option>
+            <option value="63" data-iso="PH">🇵🇭 Filipinas +63</option>
+            <option value="358" data-iso="FI">🇫🇮 Finlândia +358</option>
+            <option value="33" data-iso="FR">🇫🇷 França +33</option>
+            <option value="241" data-iso="GA">🇬🇦 Gabão +241</option>
+            <option value="233" data-iso="GH">🇬🇭 Gana +233</option>
+            <option value="995" data-iso="GE">🇬🇪 Geórgia +995</option>
+            <option value="350" data-iso="GI">🇬🇮 Gibraltar +350</option>
+            <option value="1473" data-iso="GD">🇬🇩 Granada +1473</option>
+            <option value="299" data-iso="GL">🇬🇱 Groenlândia +299</option>
+            <option value="30" data-iso="GR">🇬🇷 Grécia +30</option>
+            <option value="590" data-iso="GP">🇬🇵 Guadalupe +590</option>
+            <option value="1671" data-iso="GU">🇬🇺 Guam +1671</option>
+            <option value="502" data-iso="GT">🇬🇹 Guatemala +502</option>
+            <option value="592" data-iso="GY">🇬🇾 Guiana +592</option>
+            <option value="594" data-iso="GF">🇬🇫 Guiana Francesa +594</option>
+            <option value="224" data-iso="GN">🇬🇳 Guiné +224</option>
+            <option value="240" data-iso="GQ">🇬🇶 Guiné Equatorial +240</option>
+            <option value="245" data-iso="GW">🇬🇼 Guiné-Bissau +245</option>
+            <option value="220" data-iso="GM">🇬🇲 Gâmbia +220</option>
+            <option value="509" data-iso="HT">🇭🇹 Haiti +509</option>
+            <option value="504" data-iso="HN">🇭🇳 Honduras +504</option>
+            <option value="852" data-iso="HK">🇭🇰 Hong Kong +852</option>
+            <option value="36" data-iso="HU">🇭🇺 Hungria +36</option>
+            <option value="62" data-iso="ID">🇮🇩 Indonésia +62</option>
+            <option value="964" data-iso="IQ">🇮🇶 Iraque +964</option>
+            <option value="353" data-iso="IE">🇮🇪 Irlanda +353</option>
+            <option value="98" data-iso="IR">🇮🇷 Irã +98</option>
+            <option value="354" data-iso="IS">🇮🇸 Islândia +354</option>
+            <option value="972" data-iso="IL">🇮🇱 Israel +972</option>
+            <option value="39" data-iso="IT">🇮🇹 Itália +39</option>
+            <option value="967" data-iso="YE">🇾🇪 Iêmen +967</option>
+            <option value="1876" data-iso="JM">🇯🇲 Jamaica +1876</option>
+            <option value="81" data-iso="JP">🇯🇵 Japão +81</option>
+            <option value="962" data-iso="JO">🇯🇴 Jordânia +962</option>
+            <option value="965" data-iso="KW">🇰🇼 Kuwait +965</option>
+            <option value="856" data-iso="LA">🇱🇦 Laos +856</option>
+            <option value="266" data-iso="LS">🇱🇸 Lesoto +266</option>
+            <option value="371" data-iso="LV">🇱🇻 Letônia +371</option>
+            <option value="231" data-iso="LR">🇱🇷 Libéria +231</option>
+            <option value="423" data-iso="LI">🇱🇮 Liechtenstein +423</option>
+            <option value="370" data-iso="LT">🇱🇹 Lituânia +370</option>
+            <option value="352" data-iso="LU">🇱🇺 Luxemburgo +352</option>
+            <option value="961" data-iso="LB">🇱🇧 Líbano +961</option>
+            <option value="218" data-iso="LY">🇱🇾 Líbia +218</option>
+            <option value="853" data-iso="MO">🇲🇴 Macau +853</option>
+            <option value="389" data-iso="MK">🇲🇰 Macedônia do Norte +389</option>
+            <option value="261" data-iso="MG">🇲🇬 Madagascar +261</option>
+            <option value="265" data-iso="MW">🇲🇼 Malawi +265</option>
+            <option value="960" data-iso="MV">🇲🇻 Maldivas +960</option>
+            <option value="223" data-iso="ML">🇲🇱 Mali +223</option>
+            <option value="356" data-iso="MT">🇲🇹 Malta +356</option>
+            <option value="60" data-iso="MY">🇲🇾 Malásia +60</option>
+            <option value="212" data-iso="MA">🇲🇦 Marrocos +212</option>
+            <option value="596" data-iso="MQ">🇲🇶 Martinica +596</option>
+            <option value="222" data-iso="MR">🇲🇷 Mauritânia +222</option>
+            <option value="230" data-iso="MU">🇲🇺 Maurício +230</option>
+            <option value="373" data-iso="MD">🇲🇩 Moldávia +373</option>
+            <option value="976" data-iso="MN">🇲🇳 Mongólia +976</option>
+            <option value="382" data-iso="ME">🇲🇪 Montenegro +382</option>
+            <option value="258" data-iso="MZ">🇲🇿 Moçambique +258</option>
+            <option value="95" data-iso="MM">🇲🇲 Myanmar +95</option>
+            <option value="52" data-iso="MX">🇲🇽 México +52</option>
+            <option value="377" data-iso="MC">🇲🇨 Mônaco +377</option>
+            <option value="264" data-iso="NA">🇳🇦 Namíbia +264</option>
+            <option value="977" data-iso="NP">🇳🇵 Nepal +977</option>
+            <option value="505" data-iso="NI">🇳🇮 Nicarágua +505</option>
+            <option value="234" data-iso="NG">🇳🇬 Nigéria +234</option>
+            <option value="47" data-iso="NO">🇳🇴 Noruega +47</option>
+            <option value="687" data-iso="NC">🇳🇨 Nova Caledônia +687</option>
+            <option value="64" data-iso="NZ">🇳🇿 Nova Zelândia +64</option>
+            <option value="227" data-iso="NE">🇳🇪 Níger +227</option>
+            <option value="968" data-iso="OM">🇴🇲 Omã +968</option>
+            <option value="507" data-iso="PA">🇵🇦 Panamá +507</option>
+            <option value="675" data-iso="PG">🇵🇬 Papua-Nova Guiné +675</option>
+            <option value="92" data-iso="PK">🇵🇰 Paquistão +92</option>
+            <option value="595" data-iso="PY">🇵🇾 Paraguai +595</option>
+            <option value="31" data-iso="NL">🇳🇱 Países Baixos +31</option>
+            <option value="51" data-iso="PE">🇵🇪 Peru +51</option>
+            <option value="689" data-iso="PF">🇵🇫 Polinésia Francesa +689</option>
+            <option value="48" data-iso="PL">🇵🇱 Polônia +48</option>
+            <option value="1787" data-iso="PR">🇵🇷 Porto Rico +1787</option>
+            <option value="351" data-iso="PT">🇵🇹 Portugal +351</option>
+            <option value="996" data-iso="KG">🇰🇬 Quirguistão +996</option>
+            <option value="254" data-iso="KE">🇰🇪 Quênia +254</option>
+            <option value="44" data-iso="GB">🇬🇧 Reino Unido +44</option>
+            <option value="236" data-iso="CF">🇨🇫 República Centro-Africana +236</option>
+            <option value="1809" data-iso="DO">🇩🇴 República Dominicana +1809</option>
+            <option value="420" data-iso="CZ">🇨🇿 República Tcheca +420</option>
+            <option value="40" data-iso="RO">🇷🇴 Romênia +40</option>
+            <option value="250" data-iso="RW">🇷🇼 Ruanda +250</option>
+            <option value="7" data-iso="RU">🇷🇺 Rússia +7</option>
+            <option value="212" data-iso="EH">🇪🇭 Saara Ocidental +212</option>
+            <option value="685" data-iso="WS">🇼🇸 Samoa +685</option>
+            <option value="378" data-iso="SM">🇸🇲 San Marino +378</option>
+            <option value="290" data-iso="SH">🇸🇭 Santa Helena +290</option>
+            <option value="1758" data-iso="LC">🇱🇨 Santa Lúcia +1758</option>
+            <option value="248" data-iso="SC">🇸🇨 Seicheles +248</option>
+            <option value="221" data-iso="SN">🇸🇳 Senegal +221</option>
+            <option value="232" data-iso="SL">🇸🇱 Serra Leoa +232</option>
+            <option value="65" data-iso="SG">🇸🇬 Singapura +65</option>
+            <option value="252" data-iso="SO">🇸🇴 Somália +252</option>
+            <option value="94" data-iso="LK">🇱🇰 Sri Lanka +94</option>
+            <option value="249" data-iso="SD">🇸🇩 Sudão +249</option>
+            <option value="211" data-iso="SS">🇸🇸 Sudão do Sul +211</option>
+            <option value="597" data-iso="SR">🇸🇷 Suriname +597</option>
+            <option value="46" data-iso="SE">🇸🇪 Suécia +46</option>
+            <option value="41" data-iso="CH">🇨🇭 Suíça +41</option>
+            <option value="1869" data-iso="KN">🇰🇳 São Cristóvão e Nevis +1869</option>
+            <option value="239" data-iso="ST">🇸🇹 São Tomé e Príncipe +239</option>
+            <option value="1784" data-iso="VC">🇻🇨 São Vicente e Granadinas +1784</option>
+            <option value="381" data-iso="RS">🇷🇸 Sérvia +381</option>
+            <option value="963" data-iso="SY">🇸🇾 Síria +963</option>
+            <option value="66" data-iso="TH">🇹🇭 Tailândia +66</option>
+            <option value="886" data-iso="TW">🇹🇼 Taiwan +886</option>
+            <option value="992" data-iso="TJ">🇹🇯 Tajiquistão +992</option>
+            <option value="255" data-iso="TZ">🇹🇿 Tanzânia +255</option>
+            <option value="670" data-iso="TL">🇹🇱 Timor-Leste +670</option>
+            <option value="228" data-iso="TG">🇹🇬 Togo +228</option>
+            <option value="676" data-iso="TO">🇹🇴 Tonga +676</option>
+            <option value="1868" data-iso="TT">🇹🇹 Trinidad e Tobago +1868</option>
+            <option value="216" data-iso="TN">🇹🇳 Tunísia +216</option>
+            <option value="993" data-iso="TM">🇹🇲 Turcomenistão +993</option>
+            <option value="90" data-iso="TR">🇹🇷 Turquia +90</option>
+            <option value="380" data-iso="UA">🇺🇦 Ucrânia +380</option>
+            <option value="256" data-iso="UG">🇺🇬 Uganda +256</option>
+            <option value="598" data-iso="UY">🇺🇾 Uruguai +598</option>
+            <option value="998" data-iso="UZ">🇺🇿 Uzbequistão +998</option>
+            <option value="678" data-iso="VU">🇻🇺 Vanuatu +678</option>
+            <option value="39" data-iso="VA">🇻🇦 Vaticano +39</option>
+            <option value="58" data-iso="VE">🇻🇪 Venezuela +58</option>
+            <option value="84" data-iso="VN">🇻🇳 Vietnã +84</option>
+            <option value="263" data-iso="ZW">🇿🇼 Zimbábue +263</option>
+            <option value="260" data-iso="ZM">🇿🇲 Zâmbia +260</option>
+            <option value="27" data-iso="ZA">🇿🇦 África do Sul +27</option>
+            <option value="43" data-iso="AT">🇦🇹 Áustria +43</option>
+            <option value="91" data-iso="IN">🇮🇳 Índia +91</option>
+          </optgroup>
+            </select>
+            <input id="f-whatsapp" name="whatsapp" type="tel" inputmode="tel" required placeholder="(11) 99999-9999">
+          </div>
+          <span class="field-err" id="err-whatsapp">Informe um número de WhatsApp completo.</span>
+        </div>
+        <div class="field"><label for="f-email">E-mail</label><input id="f-email" name="email" type="email" required placeholder="voce@empresa.com.br"><span class="field-err" id="err-email">Informe um e-mail válido, com domínio completo (ex.: nome@empresa.com.br).</span></div>
         <div class="field"><label for="f-ramo">Ramo de atuação</label><input id="f-ramo" name="ramo" required placeholder="Ex.: saúde, advocacia, gastronomia"></div>
         <div class="field"><label for="f-instagram">Link do Instagram</label><input id="f-instagram" name="instagram" required placeholder="instagram.com/seuperfil"></div>
         <div class="field full">
@@ -568,6 +802,6 @@
   <span class="footer-copy">© 2026 Viral Mind Labs</span>
 </footer>
 
-<script src="script.js?v=9"></script>
+<script src="script.js?v=10"></script>
 </body>
 </html>
