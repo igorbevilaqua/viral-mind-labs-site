@@ -31,6 +31,7 @@ h2 em{color:var(--accent);font-style:italic}
 @keyframes vmlBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(8px)}}
 @keyframes vmlFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 @keyframes vmlSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes vmlPulse{0%,100%{box-shadow:0 0 0 0 rgba(245,208,59,0.5)}55%{box-shadow:0 0 0 8px rgba(245,208,59,0)}}
 
 /* reveal-on-scroll */
 [data-reveal]{opacity:0;transform:translateY(26px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
@@ -95,7 +96,7 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .ig-avatar{width:82px;height:82px;border-radius:50%;position:relative;overflow:hidden;background:#1a1b17;flex-shrink:0}
 .ig-avatar svg{position:absolute;inset:0;width:100%;height:100%;filter:blur(5px)}
 .ig-avatar span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;letter-spacing:0.14em;color:rgba(255,255,255,0.7)}
-.ig-avatar-ring{width:88px;height:88px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#F5D03B,#b98a1a);flex-shrink:0}
+.ig-avatar-ring{width:88px;height:88px;border-radius:50%;padding:3px;background:linear-gradient(135deg,#F5D03B,#b98a1a);flex-shrink:0;animation:vmlPulse 2.6s ease-in-out infinite}
 .ig-avatar-ring .ig-avatar{width:100%;height:100%;background:#141208;border:3px solid #000}
 .ig-avatar-ring .ig-avatar span{color:#fff}
 .ig-stats{flex:1;display:flex;justify-content:space-around;text-align:center}
@@ -105,6 +106,11 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .ig-stats.after .ig-stat b{font-size:17px;color:#fff}
 .ig-stats.after .ig-stat span{color:#a8a8a8}
 .ig-stats.after .ig-stat .ig-follow-count{font-family:'Instrument Serif',serif;font-size:26px;font-weight:400;color:var(--accent);line-height:1;display:block}
+.ig-stats.after .ig-stat .ig-growth{display:block;margin-top:3px;font-size:9px;font-weight:700;letter-spacing:0.02em;color:var(--accent);white-space:nowrap}
+.ig-spark{margin:14px 4px 0;padding:8px 10px 4px;background:rgba(245,208,59,0.05);border:1px solid rgba(245,208,59,0.16);border-radius:10px}
+.ig-spark-lbl{display:block;font-size:8.5px;letter-spacing:0.14em;text-transform:uppercase;color:rgba(242,243,238,0.45);font-weight:600;margin-bottom:4px}
+.ig-spark svg{display:block;width:100%;height:30px}
+#spark-line{stroke-dasharray:100;stroke-dashoffset:100}
 .ig-bio{padding:12px 4px 0;font-size:13px;line-height:1.5;color:#ccc}
 .ig-bio-after{color:#fff}
 .ig-bio-after .badge{color:var(--accent);font-size:11px;font-weight:600}

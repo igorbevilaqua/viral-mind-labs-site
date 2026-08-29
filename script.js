@@ -14,6 +14,8 @@
 
   // números do mockup que sobem junto com o morph antes/depois
   const morphEls = Array.from(document.querySelectorAll("[data-morph-to]"));
+  // pathLength="100" no SVG deixa o traço ser medido em %, sem getTotalLength()
+  const sparkLine = document.getElementById("spark-line");
   function fmtCount(v) {
     if (v >= 10000) return Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
     return Math.round(v).toLocaleString("pt-BR");
@@ -32,6 +34,7 @@
       const to = parseFloat(el.dataset.morphTo);
       el.textContent = fmtCount(from + (to - from) * e);
     });
+    if (sparkLine) sparkLine.style.strokeDashoffset = String(100 - 100 * e);
     if (hint) hint.style.display = window.innerHeight < 720 ? "none" : "flex";
 
     const s = Math.max(0.24, Math.min(0.62, (window.innerHeight - 384) / 874));
