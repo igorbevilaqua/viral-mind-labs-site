@@ -1,61 +1,130 @@
-// Atualiza os números da seção "Números" do index.html a partir do banco.
+// Atualiza os números do index.html a partir dos bancos (Supabase).
 // Rodado semanalmente pelo GitHub Actions (.github/workflows/update-stats.yml)
 // e também à mão: `node scripts/update-stats.mjs`
 //
-// A chave abaixo é a publishable key do Supabase — pública por design (é a
-// mesma que iria no JS do navegador). A função vm_site_stats() só devolve
-// agregados que já ficam visíveis no site, nada individual.
+// Atualiza:
+//   - seção "Números" (views totais, clientes ativos, maior vídeo)
+//   - cases de sucesso (antes -> hoje), via data-ig-from / data-ig-to
+//   - constelação, grid mobile e chips de clientes, via data-ig / data-ig-chip
+//
+// As chaves abaixo são publishable keys — públicas por design (as mesmas que
+// iriam no JS do navegador). As funções vm_site_stats/vm_site_clients só
+// devolvem agregados que já ficam visíveis no site, e a lista de clientes
+// dentro de vm_site_clients é fixa, então a chave não permite enumerar a
+// carteira de clientes.
 
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
-const SUPABASE_URL = "https://qclvrddrqulgfzccndnl.supabase.co";
-const SUPABASE_KEY = "sb_publishable_gtBx11GmHh3H1WbrKUMjxg_kfJVpiEZ";
+const DATA = {
+  url: "https://qclvrddrqulgfzccndnl.supabase.co",
+  key: "sb_publishable_gtBx11GmHh3H1WbrKUMjxg_kfJVpiEZ",
+};
+const CRM = {
+  url: "https://adtnxhxjgpdqehuxrvzl.supabase.co",
+  key: "sb_publishable_q7Gz4dA6gTqvLykFMv7Low_rq2d-4kW",
+};
 
 const htmlPath = join(dirname(fileURLToPath(import.meta.url)), "..", "index.html");
 
-const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/vm_site_stats`, {
-  method: "POST",
-  headers: {
-    apikey: SUPABASE_KEY,
-    Authorization: `Bearer ${SUPABASE_KEY}`,
-    "Content-Type": "application/json",
-  },
-  body: "{}",
-});
-if (!res.ok) throw new Error(`Supabase respondeu ${res.status}: ${await res.text()}`);
-const stats = await res.json();
+async function rpc({ url, key }, fn) {
+  const res = await fetch(`${url}/rest/v1/rpc/${fn}`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!res.ok) throw new Error(`${fn} respondeu ${res.status}: ${await res.text()}`);
+  return res.json();
+}
 
-// floor, não round: melhor afirmar de menos que de mais
+// Formatos do site. Abaixo de 10 mil mostra o número cheio de propósito:
+// num "antes" de case, "5.875" é mais concreto e credível que "5,9 mil".
+function fmt(v) {
+  if (v >= 1e6) {
+    const m = v / 1e6;
+    return (m >= 10 ? Math.round(m).toString() : m.toFixed(1).replace(".", ",")) + "M";
+  }
+  if (v >= 1e5) return Math.round(v / 1000).toLocaleString("pt-BR") + " mil";
+  if (v >= 1e4) return (v / 1000).toFixed(1).replace(".", ",") + " mil";
+  return Math.round(v).toLocaleString("pt-BR");
+}
+
+const [stats, clientes] = await Promise.all([rpc(DATA, "vm_site_stats"), rpc(CRM, "vm_site_clients")]);
+
+// ---- trava de sanidade: dado ruim não vira número errado no ar ----
 const views = Math.floor(stats.views_totais / 1e6);
 const maior = Math.floor(stats.maior_video / 1e6);
-const clientes = stats.clientes_ativos;
-
-// trava de sanidade: número zerado ou absurdo = dado ruim, aborta sem tocar no site
-for (const [nome, v, max] of [["views", views, 100000], ["maior vídeo", maior, 1000], ["clientes", clientes, 500]]) {
-  if (!Number.isFinite(v) || v <= 0 || v > max) {
-    throw new Error(`valor suspeito para ${nome}: ${v} — abortando sem alterar o site`);
-  }
+const ativos = stats.clientes_ativos;
+for (const [nome, v, max] of [["views", views, 100000], ["maior vídeo", maior, 1000], ["clientes ativos", ativos, 500]]) {
+  if (!Number.isFinite(v) || v <= 0 || v > max) throw new Error(`valor suspeito para ${nome}: ${v} — abortando`);
+}
+if (!Array.isArray(clientes) || clientes.length < 10) {
+  throw new Error(`vm_site_clients devolveu ${clientes?.length} clientes (esperado 13+) — abortando`);
+}
+const porHandle = new Map();
+const desatualizados = [];
+for (const c of clientes) {
+  if (typeof c.atual !== "number" || c.atual <= 0) continue;
+  porHandle.set(c.handle, c);
+  // medição velha no CRM = site publica número defasado; avisa pra corrigir a coleta
+  const dias = (Date.now() - Date.parse(c.medido_em)) / 86400000;
+  if (dias > 30) desatualizados.push(`${c.handle} (${Math.round(dias)}d)`);
+}
+if (desatualizados.length) {
+  console.warn(`ATENÇÃO — sem medição recente no CRM, número pode estar defasado: ${desatualizados.join(", ")}`);
 }
 
 let html = readFileSync(htmlPath, "utf8");
-const before = html;
+const original = html;
+const trocas = [];
 
-// cada troca é ancorada no rótulo da métrica, pra não trocar o número errado
-const swaps = [
-  [/(<span data-count-to=")\d+(">0<\/span>M\+<\/div>\s*<div class="stat-label">Visualizações geradas)/, views],
-  [/(<span data-count-to=")\d+(">0<\/span><\/div>\s*<div class="stat-label">Autoridades atendidas)/, clientes],
-  [/(<span data-count-to=")\d+(">0<\/span>M<\/div>\s*<div class="stat-label">Pessoas alcançadas)/, maior],
-];
-for (const [re, valor] of swaps) {
-  if (!re.test(html)) throw new Error(`markup não encontrado para o padrão ${re}`);
-  html = html.replace(re, `$1${valor}$2`);
+function troca(re, valor, rotulo) {
+  if (!re.test(html)) {
+    console.warn(`aviso: markup não encontrado (${rotulo}) — pulando`);
+    return;
+  }
+  const antes = html;
+  html = html.replace(re, (...g) => `${g[1]}${valor}${g[2]}`);
+  if (antes !== html) trocas.push(rotulo);
 }
 
-if (html === before) {
-  console.log(`Nada mudou (views ${views}M+, ${clientes} clientes, maior vídeo ${maior}M).`);
+// ---- seção "Números" (ancorada no rótulo pra não trocar o número errado) ----
+troca(/(<span data-count-to=")\d+(">0<\/span>M\+<\/div>\s*<div class="stat-label">Visualizações geradas)/, views, "views totais");
+troca(/(<span data-count-to=")\d+(">0<\/span><\/div>\s*<div class="stat-label">Autoridades atendidas)/, ativos, "clientes ativos");
+troca(/(<span data-count-to=")\d+(">0<\/span>M<\/div>\s*<div class="stat-label">Pessoas alcançadas)/, maior, "maior vídeo");
+
+// ---- clientes: constelação, grid mobile, chips e cases ----
+for (const [handle, c] of porHandle) {
+  const h = handle.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  troca(new RegExp(`(<span class="num" data-ig="${h}"[^>]*>)[^<]*(</span>)`), fmt(c.atual), `constelação ${handle}`);
+  troca(new RegExp(`(<span class="ca-num" data-ig="${h}">)[^<]*(</span>)`), fmt(c.atual), `grid mobile ${handle}`);
+  troca(new RegExp(`(<a class="tag rest" data-ig-chip="${h}"[^>]*>@${h} · )[^<]*(</a>)`), fmt(c.atual), `chip ${handle}`);
+  troca(new RegExp(`(<span class="to" data-ig-to="${h}">)[^<]*(</span>)`), `${fmt(c.atual)} seguidores`, `case hoje ${handle}`);
+  if (typeof c.inicial === "number" && c.inicial > 0) {
+    troca(new RegExp(`(<span class="from" data-ig-from="${h}">)[^<]*(</span>)`), fmt(c.inicial), `case antes ${handle}`);
+  }
+}
+
+// ---- selo agregado da constelação (soma do que está exibido) ----
+const nums = [...html.matchAll(/<span class="num" data-ig="([^"]+)"[^>]*>([^<]*)<\/span>/g)];
+const parse = (t) => {
+  const n = parseFloat(t.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, ""));
+  return /M/.test(t) ? n * 1e6 : /mil/.test(t) ? n * 1000 : n;
+};
+const somaVisivel = nums.reduce((acc, m) => acc + (parse(m[2]) || 0), 0);
+if (somaVisivel > 1e6) {
+  const somaFmt = (somaVisivel / 1e6).toFixed(1).replace(".", ",") + "M";
+  troca(new RegExp(`(<b>)[^<]*(</b>\\s*<span class="lbl">seguidores somados)`), somaFmt, "selo constelação");
+  troca(new RegExp(`(<div class="clientes-mobile-stat"><b>)[^<]*(</b>)`), somaFmt, "selo mobile");
+  troca(new RegExp(`(<span class="sub">)\\d+( autoridades</span>)`), nums.length, "contagem constelação");
+  troca(new RegExp(`(seguidores somados · )\\d+( autoridades)`), nums.length, "contagem mobile");
+}
+
+if (html === original) {
+  console.log(`Nada mudou (${views}M+ views · ${ativos} clientes · maior vídeo ${maior}M).`);
 } else {
   writeFileSync(htmlPath, html);
-  console.log(`Atualizado: ${views}M+ views · ${clientes} clientes ativos · maior vídeo ${maior}M`);
+  console.log(`Atualizado: ${views}M+ views · ${ativos} clientes ativos · maior vídeo ${maior}M`);
+  console.log(`${trocas.length} valores trocados: ${trocas.join(", ")}`);
 }
