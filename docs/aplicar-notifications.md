@@ -1,12 +1,12 @@
 # Aviso por e-mail a cada aplicação
 
-O site só grava a linha em `public.site_applications` no projeto Supabase **Viral Data**. O e-mail sai de um gancho no Supabase, nunca do JavaScript público.
+O destino é o projeto Supabase **Viral Data**, o mesmo que o time já usa para os dados da Viral Mind Labs. Não abrir projeto novo. A tabela `public.site_applications` é criada nesse projeto (ver [`aplicar-supabase.sql`](aplicar-supabase.sql)). O site só grava a linha; o e-mail sai de um gancho no Viral Data, nunca do JavaScript público. URL e anon key ficam como placeholder em `aplicar/config.example.js` até alguém copiar os valores de Settings → API desse projeto.
 
 Não crie conta paga para isso. Use uma caixa que já exista e, se for chamar uma API de e-mail, um provedor que você já tenha. `NOTIFY_EMAIL` abaixo é só um placeholder.
 
 ## 1. Banco
 
-Rode [`aplicar-supabase.sql`](aplicar-supabase.sql) no SQL Editor do projeto Viral Data.
+No SQL Editor do **Viral Data** (projeto existente), rode [`aplicar-supabase.sql`](aplicar-supabase.sql). Isso cria `public.site_applications` lá. Não rode este SQL a partir do repositório.
 
 ## 2. Segredos
 
@@ -86,6 +86,6 @@ O webhook usa a service role por baixo e lê a linha mesmo sem policy de SELECT 
 
 ## 5. Conferir
 
-1. Envie uma aplicação de teste em `/aplicar` com `config.js` apontando para o Viral Data.
+1. Copie a URL e a anon key do projeto Viral Data (Settings → API) para `aplicar/config.js`. Os valores no example continuam placeholder. Envie uma aplicação de teste em `/aplicar`.
 2. A linha aparece em Table Editor → `site_applications`.
 3. Se a função estiver no ar, `NOTIFY_EMAIL` recebe o aviso. Se o webhook falhar, a linha continua salva: o formulário não espera o e-mail.

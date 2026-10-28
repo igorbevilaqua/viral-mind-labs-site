@@ -257,7 +257,7 @@
       return;
     }
     if (!configReady()) {
-      showErr("consent", "Envio indisponível: falta aplicar/config.js com a URL e a anon key do projeto Viral Data.");
+      showErr("consent", "Envio indisponível: falta aplicar/config.js com a URL e a anon key do projeto Viral Data (o Supabase que o time já usa).");
       shake();
       return;
     }

@@ -1,8 +1,12 @@
 -- Aplicações de https://viralmindlabs.com/aplicar
--- Projeto Supabase: Viral Data
 --
--- Rode este arquivo inteiro no SQL Editor do projeto Viral Data.
--- Não há nada aqui que rode sozinho a partir do repositório.
+-- Alvo: o projeto Supabase que o time JÁ USA para os dados da Viral Mind Labs,
+-- de nome "Viral Data". Não criar projeto novo.
+-- A tabela public.site_applications entra nesse projeto, ao lado do que já existe lá.
+--
+-- Quem for aplicar: abrir o SQL Editor do Viral Data e rodar este arquivo inteiro.
+-- Este repositório não executa o SQL. URL e anon key continuam placeholders
+-- em aplicar/config.example.js (Settings → API do mesmo projeto Viral Data).
 --
 -- O site faz POST em /rest/v1/site_applications com Prefer: return=minimal.
 -- Por isso NÃO existe policy de SELECT: o insert não devolve a linha.
@@ -30,7 +34,7 @@ create table if not exists public.site_applications (
 );
 
 comment on table public.site_applications is
-  'Leads enviados por viralmindlabs.com/aplicar. INSERT anônimo; leitura só via service_role.';
+  'Leads de viralmindlabs.com/aplicar, no projeto Supabase existente Viral Data. INSERT anônimo; leitura só via service_role.';
 
 create index if not exists site_applications_created_at_idx
   on public.site_applications (created_at desc);
