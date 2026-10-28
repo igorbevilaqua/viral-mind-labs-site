@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aplicar — Viral Mind Labs</title>
+<meta name="description" content="Aplicação para a consultoria Viral Mind Labs. Uma pergunta de cada vez, para negócios acima de R$ 500 mil por ano.">
+<meta name="theme-color" content="#0B0C0A">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://viralmindlabs.com/aplicar">
+<meta property="og:site_name" content="Viral Mind Labs">
+<meta property="og:title" content="Aplicar — Viral Mind Labs">
+<meta property="og:description" content="Fazemos da sua voz uma das mais ouvidas desta geração.">
+<meta property="og:image" content="https://viralmindlabs.com/assets/img/og-image.jpg">
+<meta property="og:locale" content="pt_BR">
+<link rel="icon" type="image/svg+xml" href="/assets/img/favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="aplicar.css">
+<script type="text/javascript">
+    (function(c,l,a,r,i,t,y){
+        c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
+        t=l.createElement(r);t.async=1;t.src="https://www.clarity.ms/tag/"+i;
+        y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y);
+    })(window, document, "clarity", "script", "z4igsjjru1");
+</script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <a class="logo" href="/">
+      <span class="logo-main">Viral Mind</span>
+      <span class="logo-sub">Labs</span>
+    </a>
+  </header>
+
+  <form id="apply-form" class="viewport" novalidate>
+    <div class="hp" aria-hidden="true">
+      <label for="hp_check">Deixe em branco</label>
+      <input id="hp_check" name="hp_check" type="text" tabindex="-1" autocomplete="off">
+    </div>
+
+    <section class="step is-current" data-step="welcome">
+      <div class="col col-center">
+        <h1 class="welcome-title">Fazemos da sua voz<br>uma das mais <span class="mark">ouvidas<svg viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true"><path d="M16 46 C 22 16, 188 8, 202 34 C 214 56, 176 74, 36 68 C 10 64, 4 36, 24 24" fill="none" stroke="#F5D03B" stroke-width="3" stroke-linecap="round"/></svg></span><br>desta geração.</h1>
+        <p class="support">A Viral Mind Labs desenha programas para transformar quem já tem resultado em referência nas redes.</p>
+        <p class="support">Preencha a aplicação. Cada resposta é lida pela nossa equipe.</p>
+        <button type="button" class="btn" id="start">Iniciar aplicação</button>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="nome">
+      <div class="col">
+        <h2 class="q">Qual é o seu nome completo?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="nome" name="nome" class="line" type="text" autocomplete="name" placeholder="Responde aqui..." required>
+        <p class="err" data-err="nome" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="email">
+      <div class="col">
+        <h2 class="q">Qual é o seu e-mail?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="email" name="email" class="line" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br" required>
+        <p class="err" data-err="email" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="whatsapp">
+      <div class="col">
+        <h2 class="q">Qual é o seu WhatsApp?<span class="req" aria-hidden="true">*</span></h2>
+        <label class="micro" for="ddi">Código do país</label>
+        <select id="ddi" name="ddi" class="line ddi" aria-label="Código do país"></select>
+        <input id="whatsapp" name="whatsapp" class="line" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(11) 99999-9999" required>
+        <p class="err" data-err="whatsapp" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="empresa">
+      <div class="col">
+        <h2 class="q">Qual é o nome da sua empresa?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="empresa" name="empresa" class="line" type="text" autocomplete="organization" placeholder="Nome da empresa" required>
+        <p class="err" data-err="empresa" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="ramo">
+      <div class="col">
+        <h2 class="q">Qual é o seu ramo de atuação?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="ramo" name="ramo" class="line" type="text" placeholder="Ex.: saúde, advocacia, gastronomia" required>
+        <p class="err" data-err="ramo" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="instagram">
+      <div class="col">
+        <h2 class="q">Qual é o link do seu Instagram?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="instagram" name="instagram" class="line" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="instagram.com/seuperfil" required>
+        <p class="err" data-err="instagram" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="faturamento">
+      <div class="col">
+        <h2 class="q">Qual foi o faturamento da sua empresa no último ano?<span class="req" aria-hidden="true">*</span></h2>
+        <div class="picker" id="fat-picker">
+          <button type="button" class="picker-trigger" id="fat-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="fat-panel">
+            <span id="fat-label">Escreve ou seleciona uma opção</span>
+            <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+          </button>
+          <div class="picker-panel" id="fat-panel" role="listbox" hidden>
+            <button type="button" class="picker-opt" role="option" data-value="ate500" data-key="A"><span class="key">A</span>Até R$ 500 mil</button>
+            <button type="button" class="picker-opt" role="option" data-value="500a1m" data-key="B"><span class="key">B</span>Entre R$ 500 mil e R$ 1 milhão</button>
+            <button type="button" class="picker-opt" role="option" data-value="1a5m" data-key="C"><span class="key">C</span>Entre R$ 1 e R$ 5 milhões</button>
+            <button type="button" class="picker-opt" role="option" data-value="acima5m" data-key="D"><span class="key">D</span>Acima de R$ 5 milhões</button>
+          </div>
+        </div>
+        <input type="hidden" id="faturamento" name="faturamento" value="">
+        <p class="err" data-err="faturamento" hidden></p>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="obs">
+      <div class="col">
+        <h2 class="q">Tem alguma dúvida ou observação?</h2>
+        <p class="optional">Opcional. Pode pular.</p>
+        <textarea id="obs" name="obs" class="line" rows="3" placeholder="Responde aqui..."></textarea>
+        <div class="actions">
+          <button type="button" class="ok" data-go id="obs-ok">Pular</button>
+          <span class="hint">Enter continua · Shift+Enter quebra a linha</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="consent">
+      <div class="col">
+        <h2 class="q">Antes de enviar, confirme que está ciente.<span class="req" aria-hidden="true">*</span></h2>
+        <label class="consent">
+          <input type="checkbox" id="ciente" name="ciente">
+          <span><strong>Estou ciente</strong> de que a consultoria Viral Mind Labs é destinada a empresários que já possuem produto ou serviço estruturado e faturamento superior a R$ 500 mil nos últimos 12 meses. Após o envio, minhas respostas serão analisadas e, havendo compatibilidade de perfil, a equipe entrará em contato o mais rápido possível. O investimento no serviço varia entre R$ 8 mil e R$ 20 mil mensais.</span>
+        </label>
+        <p class="err" data-err="consent" hidden></p>
+        <div class="actions">
+          <button type="submit" class="btn" id="send">Enviar</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="success">
+      <div class="col col-center">
+        <svg class="check" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="none" stroke="#F5D03B" stroke-width="1.5"></circle><path d="M17 29l8 8 14-16" stroke="#F5D03B" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <h2 class="done">Aplicação <em>enviada</em>.</h2>
+        <p class="support">Suas respostas serão analisadas pela nossa equipe. Se o seu perfil estiver de acordo, entraremos em contato o mais rápido possível.</p>
+        <a class="btn" href="/">Voltar ao início</a>
+      </div>
+    </section>
+  </form>
+
+  <div class="progress" aria-hidden="true"><span id="progress"></span></div>
+  <div class="pager" id="pager" hidden>
+    <button type="button" id="prev" aria-label="Pergunta anterior">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 9l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+    <button type="button" id="next" aria-label="Próxima pergunta">
+      <svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M3 5l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+    </button>
+  </div>
+  <p id="live" class="sr" aria-live="polite"></p>
+</div>
+<script src="paises.js"></script>
+<script src="config.js"></script>
+<script src="aplicar.js"></script>
+</body>
+</html>
