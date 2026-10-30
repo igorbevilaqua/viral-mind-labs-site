@@ -2,10 +2,14 @@
 // localStorage (vml_attr_v1) guarda o primeiro toque por 90 dias e o último toque.
 // O jsonb utm sai achatado: chaves do último toque no topo e as mesmas com prefixo
 // first_ para o primeiro. Cada valor é texto de no máximo 200 caracteres.
+// Campanha é qualquer utm_* válido mais gclid e fbclid, até 20 chaves por toque.
+// O último toque só muda quando a URL traz campanha.
 (function (root) {
   "use strict";
 
   var CAMPAIGN_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
+  var CAMPAIGN_KEY_RE = /^utm_[a-z0-9_]{1,36}$/;
+  var CAMPAIGN_KEYS_MAX = 20;
   var CONTEXT_KEYS = ["landing_page", "referrer", "ts"];
   var TOUCH_KEYS = CAMPAIGN_KEYS.concat(CONTEXT_KEYS);
   var VALUE_MAX = 200;
@@ -32,28 +36,57 @@
     }
   }
 
-  function hasCampaign(touch) {
-    if (!touch) return false;
-    for (var i = 0; i < CAMPAIGN_KEYS.length; i++) {
-      if (touch[CAMPAIGN_KEYS[i]]) return true;
+  function isCampaignKey(key) {
+    return key === "gclid" || key === "fbclid" || CAMPAIGN_KEY_RE.test(key);
+  }
+
+  // As chaves conhecidas vêm antes das demais: fixam a ordem e têm prioridade no teto.
+  function pickCampaign(keys, read) {
+    var out = {};
+    var count = 0;
+    var ordered = CAMPAIGN_KEYS.concat(keys);
+    for (var i = 0; i < ordered.length && count < CAMPAIGN_KEYS_MAX; i++) {
+      var key = ordered[i];
+      if (!isCampaignKey(key) || out[key]) continue;
+      var value = clip(read(key));
+      if (value) {
+        out[key] = value;
+        count++;
+      }
     }
-    return false;
+    return out;
+  }
+
+  function campaignKeys(touch) {
+    if (!touch) return [];
+    return Object.keys(touch).filter(function (key) {
+      return isCampaignKey(key) && touch[key];
+    });
+  }
+
+  function hasCampaign(touch) {
+    return campaignKeys(touch).length > 0;
   }
 
   function sameCampaign(a, b) {
     if (!a || !b) return false;
-    for (var i = 0; i < CAMPAIGN_KEYS.length; i++) {
-      var key = CAMPAIGN_KEYS[i];
-      if ((a[key] || "") !== (b[key] || "")) return false;
+    var keys = campaignKeys(a).concat(campaignKeys(b));
+    for (var i = 0; i < keys.length; i++) {
+      if ((a[keys[i]] || "") !== (b[keys[i]] || "")) return false;
     }
     return true;
+  }
+
+  function touchKeys(touch) {
+    return campaignKeys(touch).concat(CONTEXT_KEYS);
   }
 
   function copyTouch(touch) {
     if (!touch) return null;
     var out = {};
-    for (var i = 0; i < TOUCH_KEYS.length; i++) {
-      var key = TOUCH_KEYS[i];
+    var keys = touchKeys(touch);
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i];
       if (touch[key]) out[key] = touch[key];
     }
     return Object.keys(out).length ? out : null;
@@ -69,12 +102,7 @@
 
   function sanitizeTouch(raw) {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-    var out = {};
-    for (var i = 0; i < CAMPAIGN_KEYS.length; i++) {
-      var key = CAMPAIGN_KEYS[i];
-      var value = clip(raw[key]);
-      if (value) out[key] = value;
-    }
+    var out = pickCampaign(Object.keys(raw), function (key) { return raw[key]; });
     var landing = originPath(raw.landing_page);
     var referrer = originPath(raw.referrer);
     if (landing) out.landing_page = landing;
@@ -145,12 +173,14 @@
   function flatten(last, first, jsonMax) {
     var out = {};
     var i;
-    for (i = 0; i < TOUCH_KEYS.length; i++) {
-      var key = TOUCH_KEYS[i];
+    var lastKeys = touchKeys(last);
+    var firstKeys = touchKeys(first);
+    for (i = 0; i < lastKeys.length; i++) {
+      var key = lastKeys[i];
       if (last && last[key]) out[key] = last[key];
     }
-    for (i = 0; i < TOUCH_KEYS.length; i++) {
-      var fkey = TOUCH_KEYS[i];
+    for (i = 0; i < firstKeys.length; i++) {
+      var fkey = firstKeys[i];
       if (first && first[fkey]) out["first_" + fkey] = first[fkey];
     }
     if (!Object.keys(out).length) return null;
@@ -168,12 +198,7 @@
 
     function currentTouch() {
       var params = new URLSearchParams(page.search || "");
-      var touch = {};
-      for (var i = 0; i < CAMPAIGN_KEYS.length; i++) {
-        var key = CAMPAIGN_KEYS[i];
-        var value = clip(params.get(key) || "");
-        if (value) touch[key] = value;
-      }
+      var touch = pickCampaign(Array.from(params.keys()), function (key) { return params.get(key); });
       var landing = originPath(page.href || "");
       var referrer = originPath(page.referrer || "");
       if (landing) touch.landing_page = landing;
@@ -188,8 +213,9 @@
       var t = now();
       if (!fresh(stored.first, t)) {
         var opened = copyTouch(current);
-        writeStore(storage, { first: opened, last: opened });
-        return { first: opened, last: opened };
+        var kept = hasCampaign(current) ? opened : stored.last || opened;
+        writeStore(storage, { first: opened, last: kept });
+        return { first: opened, last: kept };
       }
       if (hasCampaign(current)) {
         var passThrough = isAplicarPath(page.pathname || "") && sameCampaign(stored.last, current);
@@ -245,16 +271,12 @@
       var source = campaignSource();
       if (!source) return href;
       var i;
-      for (i = 0; i < CAMPAIGN_KEYS.length; i++) url.searchParams.delete(CAMPAIGN_KEYS[i]);
-      var any = false;
-      for (i = 0; i < CAMPAIGN_KEYS.length; i++) {
-        var key = CAMPAIGN_KEYS[i];
-        if (source[key]) {
-          url.searchParams.set(key, source[key]);
-          any = true;
-        }
+      var existing = Array.from(url.searchParams.keys());
+      for (i = 0; i < existing.length; i++) {
+        if (isCampaignKey(existing[i])) url.searchParams.delete(existing[i]);
       }
-      if (!any) return href;
+      var keys = campaignKeys(source);
+      for (i = 0; i < keys.length; i++) url.searchParams.set(keys[i], source[keys[i]]);
       var out = url.pathname + url.search + url.hash;
       return /^https?:\/\//i.test(href) ? url.origin + out : out;
     }
@@ -323,6 +345,9 @@
     clip: clip,
     originPath: originPath,
     CAMPAIGN_KEYS: CAMPAIGN_KEYS,
+    CAMPAIGN_KEY_RE: CAMPAIGN_KEY_RE,
+    CAMPAIGN_KEYS_MAX: CAMPAIGN_KEYS_MAX,
+    isCampaignKey: isCampaignKey,
     TOUCH_KEYS: TOUCH_KEYS,
     VALUE_MAX: VALUE_MAX,
     JSON_MAX: JSON_MAX,

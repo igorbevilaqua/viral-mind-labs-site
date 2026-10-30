@@ -255,7 +255,9 @@
       return window.VMLAttribution.forSubmit();
     }
     const params = new URLSearchParams(window.location.search);
-    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
+    const keys = Array.from(new Set(params.keys()))
+      .filter((key) => key === "gclid" || key === "fbclid" || /^utm_[a-z0-9_]{1,36}$/.test(key))
+      .slice(0, 20);
     const utm = {};
     keys.forEach((key) => {
       const value = params.get(key);
