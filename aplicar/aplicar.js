@@ -213,13 +213,25 @@
       return window.VMLAttribution.forSubmit();
     }
     const params = new URLSearchParams(window.location.search);
-    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
+    const found = {};
+    params.forEach((value, rawKey) => {
+      const key = String(rawKey || "").toLowerCase().replace(/[^a-z0-9_]/g, "").slice(0, 40);
+      const ok = key === "gclid" || key === "fbclid" || /^utm_[a-z0-9_]+$/.test(key);
+      if (!ok || found[key]) return;
+      const clean = String(value || "").replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 200);
+      if (clean) found[key] = clean;
+    });
+    const canonical = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id"];
+    const clicks = ["gclid", "fbclid"];
+    const extras = Object.keys(found).filter((key) => /^utm_[a-z0-9_]+$/.test(key) && canonical.indexOf(key) === -1).sort();
+    const priority = canonical.concat(clicks, extras).filter((key) => found[key]);
+    const kept = {};
+    priority.slice(0, 20).forEach((key) => {
+      kept[key] = found[key];
+    });
     const utm = {};
-    keys.forEach((key) => {
-      const value = params.get(key);
-      if (!value) return;
-      const clean = value.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 200);
-      if (clean) utm[key] = clean;
+    canonical.concat(extras, clicks).forEach((key) => {
+      if (kept[key]) utm[key] = kept[key];
     });
     return Object.keys(utm).length ? utm : null;
   }

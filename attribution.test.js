@@ -302,22 +302,28 @@ test("storage bloqueado ainda leva a campanha da URL e propaga no link", () => {
   );
 });
 
-test("links de /aplicar recebem só a lista fixa, também a partir do storage", () => {
+test("links de /aplicar recebem utm_id e qualquer utm_* sanitizado, e deixam email de fora", () => {
   const ctx = setup({
     page: page({
-      href: "https://viralmindlabs.com/?utm_source=ig&email=pessoa@x.com&utm_foo=nao",
-      search: "?utm_source=ig&email=pessoa@x.com&utm_foo=nao",
+      href: "https://viralmindlabs.com/?utm_source=ig&utm_id=primeiroteste&email=pessoa@x.com&utm_foo=sim&UTM_TERM=bio",
+      search: "?utm_source=ig&utm_id=primeiroteste&email=pessoa@x.com&utm_foo=sim&UTM_TERM=bio",
     }),
   });
   ctx.api.capture();
-  assert.equal(ctx.api.decorateHref("/aplicar"), "/aplicar?utm_source=ig");
-  assert.equal(ctx.api.decorateHref("/aplicar/"), "/aplicar/?utm_source=ig");
-  assert.equal(ctx.api.decorateHref("/aplicar#fim"), "/aplicar?utm_source=ig#fim");
+  assert.equal(
+    ctx.api.decorateHref("/aplicar"),
+    "/aplicar?utm_source=ig&utm_term=bio&utm_id=primeiroteste&utm_foo=sim"
+  );
+  assert.equal(ctx.api.decorateHref("/aplicar/"), "/aplicar/?utm_source=ig&utm_term=bio&utm_id=primeiroteste&utm_foo=sim");
+  assert.equal(ctx.api.decorateHref("/aplicar#fim"), "/aplicar?utm_source=ig&utm_term=bio&utm_id=primeiroteste&utm_foo=sim#fim");
   assert.equal(ctx.api.decorateHref("https://instagram.com/igorbevilaqua/"), "https://instagram.com/igorbevilaqua/");
   assert.equal(ctx.api.decorateHref("mailto:oi@viralmindlabs.com"), "mailto:oi@viralmindlabs.com");
   ctx.page.search = "";
   ctx.page.href = "https://viralmindlabs.com/";
-  assert.equal(ctx.api.decorateHref("/aplicar"), "/aplicar?utm_source=ig");
+  assert.equal(
+    ctx.api.decorateHref("/aplicar"),
+    "/aplicar?utm_source=ig&utm_term=bio&utm_id=primeiroteste&utm_foo=sim"
+  );
 });
 
 test("clique atualiza o href antes da navegação", () => {
@@ -428,12 +434,137 @@ test("payload dos outros campos do formulário permanece o mesmo", () => {
   assert.match(src, /window\.VMLAttribution/);
 });
 
+test("home com utm_id chega em /aplicar e o jsonb leva last e first", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/?utm_id=primeiroteste&utm_source=instagram",
+      search: "?utm_id=primeiroteste&utm_source=instagram",
+      referrer: "https://l.instagram.com/reels?igsh=secreto",
+    }),
+  });
+  const button = link("/aplicar");
+  ctx.links.push(button);
+  ctx.api.start();
+  assert.equal(button.href, "/aplicar?utm_source=instagram&utm_id=primeiroteste");
+  ctx.clicks[0]({ target: button });
+  assert.equal(button.href, "/aplicar?utm_source=instagram&utm_id=primeiroteste");
+  ctx.page.href = "https://viralmindlabs.com" + button.href;
+  ctx.page.search = "?utm_source=instagram&utm_id=primeiroteste";
+  ctx.page.pathname = "/aplicar";
+  ctx.page.referrer = "https://viralmindlabs.com/?utm_id=primeiroteste&utm_source=instagram";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "primeiroteste");
+  assert.equal(utm.utm_source, "instagram");
+  assert.equal(utm.first_utm_id, "primeiroteste");
+  assert.equal(utm.first_utm_source, "instagram");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.referrer, "https://l.instagram.com/reels");
+  assert.equal(utm.first_landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.first_referrer, "https://l.instagram.com/reels");
+  assert.equal(utm.ts, "2026-10-30T08:00:00.000Z");
+  assert.ok(utm.utm_id.length <= 200);
+  assert.equal(Object.keys(utm).indexOf("utm_id") < Object.keys(utm).indexOf("first_utm_id"), true);
+});
+
+test("utm_id sobrevive no storage quando /aplicar abre sem query", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/?utm_id=primeiroteste&utm_source=y",
+      search: "?utm_id=primeiroteste&utm_source=y",
+    }),
+  });
+  ctx.api.capture();
+  ctx.page.href = "https://viralmindlabs.com/aplicar";
+  ctx.page.search = "";
+  ctx.page.pathname = "/aplicar";
+  ctx.page.referrer = "https://viralmindlabs.com/";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "primeiroteste");
+  assert.equal(utm.utm_source, "y");
+  assert.equal(utm.first_utm_id, "primeiroteste");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+});
+
+test("segunda campanha troca o utm_id do last e mantém o first_", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/?utm_id=primeiroteste&utm_source=instagram",
+      search: "?utm_id=primeiroteste&utm_source=instagram",
+    }),
+  });
+  ctx.api.capture();
+  ctx.now = T0 + 24 * 60 * 60 * 1000;
+  ctx.page.href = "https://viralmindlabs.com/?utm_id=segundo&utm_source=google";
+  ctx.page.search = "?utm_id=segundo&utm_source=google";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "segundo");
+  assert.equal(utm.utm_source, "google");
+  assert.equal(utm.first_utm_id, "primeiroteste");
+  assert.equal(utm.first_utm_source, "instagram");
+});
+
+test("nome de chave fora de [a-z0-9_] é sanitizado, valor corta em 200 e o teto é 20", () => {
+  const extras = [];
+  for (let i = 0; i < 24; i++) extras.push("utm_e" + String(i).padStart(2, "0") + "=v" + i);
+  const longKey = "utm_" + "k".repeat(50);
+  const search = "?utm_source=ig&gclid=g&" + extras.join("&") + "&email=a@b.c&utm_id!=primeiroteste&UTM_MEDIUM=%0abio%20&" + longKey + "=" + "v".repeat(240);
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/" + search,
+      search: search,
+    }),
+  });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "ig");
+  assert.equal(utm.utm_medium, "bio");
+  assert.equal(utm.utm_id, "primeiroteste");
+  assert.equal(utm.gclid, "g");
+  assert.equal(utm.utm_e00, "v0");
+  assert.equal(utm.utm_e15, "v15");
+  assert.equal(Object.hasOwn(utm, "utm_e16"), false);
+  assert.equal(Object.hasOwn(utm, "email"), false);
+  assert.equal(Object.hasOwn(utm, longKey), false);
+  const campaign = Object.keys(utm).filter((key) => !key.startsWith("first_") && key !== "landing_page" && key !== "referrer" && key !== "ts");
+  assert.equal(campaign.length, 20);
+  for (const key of Object.keys(utm)) {
+    assert.match(key, /^[a-z0-9_]+$/);
+    assert.equal(typeof utm[key], "string");
+    assert.ok(utm[key].length <= 200);
+  }
+});
+
+test("chave utm longa fica com 40 caracteres e o valor com 200", () => {
+  const key = "utm_" + "k".repeat(50);
+  const search = "?" + key + "=" + "v".repeat(240);
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/" + search,
+      search: search,
+    }),
+  });
+  const stored = ctx.api.capture();
+  const keys = Object.keys(stored.first).filter((name) => name.indexOf("utm_") === 0);
+  assert.deepEqual(keys, ["utm_" + "k".repeat(36)]);
+  assert.equal(keys[0].length, 40);
+  assert.equal(stored.first[keys[0]].length, 200);
+});
+
+test("fallback de readUtm aceita utm_id e qualquer utm_*, com teto de 20", () => {
+  const src = fs.readFileSync(path.join(__dirname, "aplicar/aplicar.js"), "utf8");
+  const read = src.slice(src.indexOf("function readUtm"), src.indexOf("function configReady"));
+  assert.match(read, /utm_id/);
+  assert.match(read, /utm_\[a-z0-9_\]/);
+  assert.match(read, /slice\(0, 20\)/);
+  assert.match(read, /slice\(0, 200\)/);
+  assert.equal(read.includes('["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"]'), false);
+});
+
 test("html da home e de /aplicar carregam attribution.js com versão", () => {
   const home = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const form = fs.readFileSync(path.join(__dirname, "aplicar/index.html"), "utf8");
   assert.equal(home.match(/href="\/aplicar"/g).length, 3);
-  assert.match(home, /src="\/attribution\.js\?v=13"/);
-  assert.match(form, /src="\/attribution\.js\?v=13"/);
-  assert.match(form, /src="aplicar\.js\?v=13"/);
-  assert.ok(form.indexOf("/attribution.js?v=13") < form.indexOf("aplicar.js?v=13"));
+  assert.match(home, /src="\/attribution\.js\?v=14"/);
+  assert.match(form, /src="\/attribution\.js\?v=14"/);
+  assert.match(form, /src="aplicar\.js\?v=14"/);
+  assert.ok(form.indexOf("/attribution.js?v=14") < form.indexOf("aplicar.js?v=14"));
 });
