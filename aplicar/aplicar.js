@@ -209,12 +209,17 @@
   }
 
   function readUtm() {
+    if (window.VMLAttribution && typeof window.VMLAttribution.forSubmit === "function") {
+      return window.VMLAttribution.forSubmit();
+    }
     const params = new URLSearchParams(window.location.search);
-    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content"];
+    const keys = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
     const utm = {};
     keys.forEach((key) => {
       const value = params.get(key);
-      if (value) utm[key] = value.slice(0, 200);
+      if (!value) return;
+      const clean = value.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 200);
+      if (clean) utm[key] = clean;
     });
     return Object.keys(utm).length ? utm : null;
   }
