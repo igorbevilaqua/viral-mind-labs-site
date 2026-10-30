@@ -2,7 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { create, VALUE_MAX, FIRST_TTL_MS, STORAGE_KEY } = require("./attribution.js");
+const { create, VALUE_MAX, FIRST_TTL_MS, STORAGE_KEY, CAMPAIGN_KEYS_MAX, isCampaignKey } = require("./attribution.js");
 
 const T0 = Date.parse("2026-10-30T08:00:00.000Z");
 
@@ -302,11 +302,11 @@ test("storage bloqueado ainda leva a campanha da URL e propaga no link", () => {
   );
 });
 
-test("links de /aplicar recebem só a lista fixa, também a partir do storage", () => {
+test("links de /aplicar recebem só chaves de campanha, também a partir do storage", () => {
   const ctx = setup({
     page: page({
-      href: "https://viralmindlabs.com/?utm_source=ig&email=pessoa@x.com&utm_foo=nao",
-      search: "?utm_source=ig&email=pessoa@x.com&utm_foo=nao",
+      href: "https://viralmindlabs.com/?utm_source=ig&email=pessoa@x.com&utm_Foo=nao",
+      search: "?utm_source=ig&email=pessoa@x.com&utm_Foo=nao",
     }),
   });
   ctx.api.capture();
@@ -432,8 +432,187 @@ test("html da home e de /aplicar carregam attribution.js com versão", () => {
   const home = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const form = fs.readFileSync(path.join(__dirname, "aplicar/index.html"), "utf8");
   assert.equal(home.match(/href="\/aplicar"/g).length, 3);
-  assert.match(home, /src="\/attribution\.js\?v=13"/);
-  assert.match(form, /src="\/attribution\.js\?v=13"/);
-  assert.match(form, /src="aplicar\.js\?v=13"/);
-  assert.ok(form.indexOf("/attribution.js?v=13") < form.indexOf("aplicar.js?v=13"));
+  assert.match(home, /src="\/attribution\.js\?v=14"/);
+  assert.match(form, /src="\/attribution\.js\?v=14"/);
+  assert.match(form, /src="aplicar\.js\?v=14"/);
+  assert.ok(form.indexOf("/attribution.js?v=14") < form.indexOf("aplicar.js?v=14"));
+});
+
+function campaignPage(search, extra) {
+  return page(Object.assign({ href: "https://viralmindlabs.com/" + search, search }, extra));
+}
+
+function visit(ctx, search, pathname) {
+  ctx.page.pathname = pathname || "/";
+  ctx.page.href = "https://viralmindlabs.com" + ctx.page.pathname + search;
+  ctx.page.search = search;
+}
+
+test("utm_id e utm_foo entram no first, no last e no jsonb", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig&utm_id=123&utm_foo=bar") });
+  const stored = ctx.api.capture();
+  assert.equal(stored.last.utm_id, "123");
+  assert.equal(stored.last.utm_foo, "bar");
+  assert.equal(ctx.api.readStore().first.utm_id, "123");
+  assert.equal(ctx.api.readStore().last.utm_foo, "bar");
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "123");
+  assert.equal(utm.utm_foo, "bar");
+  assert.equal(utm.first_utm_id, "123");
+  assert.equal(utm.first_utm_foo, "bar");
+});
+
+test("só utm_id já conta como campanha e troca o last", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig") });
+  ctx.api.capture();
+  visit(ctx, "?utm_id=abc");
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "abc");
+  assert.equal(Object.hasOwn(utm, "utm_source"), false);
+  assert.equal(utm.first_utm_source, "ig");
+});
+
+test("mudar só uma chave genérica é outra campanha, mesmo em /aplicar", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig&utm_id=1") });
+  ctx.api.capture();
+  visit(ctx, "?utm_source=ig&utm_id=2", "/aplicar");
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "2");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/aplicar");
+});
+
+test("matcher aceita chave de até 40 caracteres e rejeita o resto", () => {
+  const longest = "utm_" + "a".repeat(36);
+  assert.equal(longest.length, 40);
+  assert.equal(isCampaignKey(longest), true);
+  assert.equal(isCampaignKey(longest + "a"), false);
+  assert.equal(isCampaignKey("utm_"), false);
+  assert.equal(isCampaignKey("UTM_SOURCE"), false);
+  assert.equal(isCampaignKey("utm_a-b"), false);
+  assert.equal(isCampaignKey("gclid"), true);
+  assert.equal(isCampaignKey("fbclid"), true);
+  assert.equal(isCampaignKey("msclkid"), false);
+});
+
+test("chave com mais de 40 caracteres fica de fora e não conta como campanha", () => {
+  const tooLong = "utm_" + "a".repeat(37);
+  const ctx = setup({ page: campaignPage("?utm_source=ig") });
+  ctx.api.capture();
+  visit(ctx, "?" + tooLong + "=x");
+  const utm = ctx.api.forSubmit();
+  assert.equal(Object.hasOwn(utm, tooLong), false);
+  assert.equal(utm.utm_source, "ig");
+});
+
+test("teto de 20 chaves por toque, na captura e na leitura do storage", () => {
+  assert.equal(CAMPAIGN_KEYS_MAX, 20);
+  const extras = Array.from({ length: 25 }, (_, i) => "utm_x" + i + "=v" + i);
+  const search = "?" + extras.join("&") + "&fbclid=fb&gclid=gc&utm_source=ig";
+  const ctx = setup({ page: campaignPage(search) });
+  const stored = ctx.api.capture();
+  const count = (touch) => Object.keys(touch).filter(isCampaignKey).length;
+  assert.equal(count(stored.first), 20);
+  assert.equal(stored.first.utm_source, "ig");
+  assert.equal(stored.first.gclid, "gc");
+  assert.equal(stored.first.fbclid, "fb");
+  assert.equal(stored.first.utm_x16, "v16");
+  assert.equal(Object.hasOwn(stored.first, "utm_x17"), false);
+
+  const raw = { ts: new Date(T0).toISOString() };
+  for (let i = 0; i < 25; i++) raw["utm_y" + i] = "v";
+  const other = setup();
+  other.storage.setItem(STORAGE_KEY, JSON.stringify({ first: raw, last: raw }));
+  assert.equal(count(other.api.readStore().last), 20);
+});
+
+test("chave repetida ou vazia não gasta o teto de 20", () => {
+  const repeated = Array.from({ length: 30 }, () => "utm_a=1").join("&");
+  const empty = Array.from({ length: 30 }, (_, i) => "utm_e" + i + "=").join("&");
+  const ctx = setup({ page: campaignPage("?" + repeated + "&" + empty + "&utm_b=2") });
+  const stored = ctx.api.capture();
+  assert.equal(stored.last.utm_a, "1");
+  assert.equal(stored.last.utm_b, "2");
+  assert.equal(Object.hasOwn(stored.last, "utm_e0"), false);
+});
+
+test("valor genérico é cortado em 200 caracteres", () => {
+  const ctx = setup({ page: campaignPage("?utm_foo=" + "f".repeat(240)) });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_foo.length, 200);
+  assert.equal(utm.first_utm_foo.length, 200);
+  assert.equal(ctx.api.readStore().last.utm_foo.length, 200);
+});
+
+test("jsonb com 20 chaves longas nos dois toques respeita o teto padrão", () => {
+  const keys = Array.from({ length: 20 }, (_, i) => "utm_" + String(i).padStart(36, "k"));
+  const search = "?" + keys.map((key) => key + "=" + "v".repeat(200)).join("&");
+  const ctx = setup({ page: campaignPage(search) });
+  const utm = ctx.api.forSubmit();
+  assert.ok(JSON.stringify(utm).length <= 4800);
+  assert.ok(utm[keys[0]].startsWith("v"));
+});
+
+test("visita sem campanha mantém o last inteiro", () => {
+  const ctx = setup({
+    page: campaignPage("?utm_source=ig&utm_id=1", { referrer: "https://l.instagram.com/" }),
+  });
+  ctx.api.capture();
+  const before = ctx.api.readStore().last;
+  ctx.now = T0 + 5 * 24 * 60 * 60 * 1000;
+  visit(ctx, "", "/sobre");
+  ctx.page.referrer = "https://www.google.com/";
+  ctx.api.capture();
+  assert.deepEqual(ctx.api.readStore().last, before);
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "ig");
+  assert.equal(utm.utm_id, "1");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.referrer, "https://l.instagram.com/");
+  assert.equal(utm.ts, "2026-10-30T08:00:00.000Z");
+});
+
+test("visita sem campanha depois de 90 dias renova o first e mantém o last", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig&utm_id=1") });
+  ctx.api.capture();
+  ctx.now = T0 + FIRST_TTL_MS;
+  visit(ctx, "", "/");
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "ig");
+  assert.equal(utm.utm_id, "1");
+  assert.equal(utm.ts, "2026-10-30T08:00:00.000Z");
+  assert.equal(Object.hasOwn(utm, "first_utm_source"), false);
+  assert.equal(utm.first_ts, new Date(ctx.now).toISOString());
+  assert.equal(ctx.api.decorateHref("/aplicar"), "/aplicar?utm_source=ig&utm_id=1");
+});
+
+test("link para /aplicar leva utm_id e chaves genéricas, da URL e do storage", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig&utm_id=123&utm_foo=bar") });
+  ctx.api.capture();
+  const expected = "/aplicar?utm_source=ig&utm_id=123&utm_foo=bar";
+  assert.equal(ctx.api.decorateHref("/aplicar"), expected);
+  visit(ctx, "");
+  assert.equal(ctx.api.decorateHref("/aplicar"), expected);
+});
+
+test("link para /aplicar troca chaves de campanha antigas e preserva as outras", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=ig") });
+  ctx.api.capture();
+  assert.equal(
+    ctx.api.decorateHref("/aplicar?utm_id=velho&utm_foo=velho&utm_source=velho&gclid=velho&plano=a"),
+    "/aplicar?plano=a&utm_source=ig"
+  );
+});
+
+test("passagem por link com chaves genéricas não vira nova campanha em /aplicar", () => {
+  const ctx = setup({
+    page: campaignPage("?utm_id=1&utm_source=ig", { referrer: "https://l.instagram.com/" }),
+  });
+  ctx.api.capture();
+  const next = ctx.api.decorateHref("/aplicar");
+  visit(ctx, next.slice(next.indexOf("?")), "/aplicar");
+  ctx.page.referrer = "https://viralmindlabs.com/";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_id, "1");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.referrer, "https://l.instagram.com/");
 });
