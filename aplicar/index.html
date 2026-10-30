@@ -44,7 +44,7 @@
     <section class="step is-current" data-step="welcome">
       <div class="col col-center">
         <h1 class="welcome-title">Fazemos da sua voz<br>uma das mais <span class="mark">ouvidas<svg viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true"><path d="M16 46 C 22 16, 188 8, 202 34 C 214 56, 176 74, 36 68 C 10 64, 4 36, 24 24" fill="none" stroke="#F5D03B" stroke-width="3" stroke-linecap="round"/></svg></span><br>desta geração.</h1>
-        <p class="support">A Viral Mind Labs desenha programas para transformar quem já tem resultado em referência nas redes.</p>
+        <p class="support">A Viral Mind Labs faz autoridades e empresários virarem referência no conteúdo, com roteiros feitos para viralizar.</p>
         <p class="support">Preencha a aplicação. Cada resposta é lida pela nossa equipe.</p>
         <button type="button" class="btn" id="start">Iniciar aplicação</button>
       </div>
@@ -53,8 +53,8 @@
     <section class="step is-below" data-step="nome">
       <div class="col">
         <h2 class="q">Qual é o seu nome completo?<span class="req" aria-hidden="true">*</span></h2>
-        <input id="nome" name="nome" class="line" type="text" autocomplete="name" placeholder="Responde aqui..." required>
-        <p class="err" data-err="nome" hidden></p>
+        <input id="nome" name="nome" class="line" type="text" autocomplete="name" placeholder="Nome e sobrenome" required>
+        <p class="err" id="err-nome" data-err="nome" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -66,7 +66,7 @@
       <div class="col">
         <h2 class="q">Qual é o seu e-mail?<span class="req" aria-hidden="true">*</span></h2>
         <input id="email" name="email" class="line" type="email" autocomplete="email" inputmode="email" placeholder="voce@empresa.com.br" required>
-        <p class="err" data-err="email" hidden></p>
+        <p class="err" id="err-email" data-err="email" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -80,7 +80,7 @@
         <label class="micro" for="ddi">Código do país</label>
         <select id="ddi" name="ddi" class="line ddi" aria-label="Código do país"></select>
         <input id="whatsapp" name="whatsapp" class="line" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(11) 99999-9999" required>
-        <p class="err" data-err="whatsapp" hidden></p>
+        <p class="err" id="err-whatsapp" data-err="whatsapp" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -92,7 +92,7 @@
       <div class="col">
         <h2 class="q">Qual é o nome da sua empresa?<span class="req" aria-hidden="true">*</span></h2>
         <input id="empresa" name="empresa" class="line" type="text" autocomplete="organization" placeholder="Nome da empresa" required>
-        <p class="err" data-err="empresa" hidden></p>
+        <p class="err" id="err-empresa" data-err="empresa" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -104,7 +104,7 @@
       <div class="col">
         <h2 class="q">Qual é o seu ramo de atuação?<span class="req" aria-hidden="true">*</span></h2>
         <input id="ramo" name="ramo" class="line" type="text" placeholder="Ex.: saúde, advocacia, gastronomia" required>
-        <p class="err" data-err="ramo" hidden></p>
+        <p class="err" id="err-ramo" data-err="ramo" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -116,7 +116,7 @@
       <div class="col">
         <h2 class="q">Qual é o link do seu Instagram?<span class="req" aria-hidden="true">*</span></h2>
         <input id="instagram" name="instagram" class="line" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="instagram.com/seuperfil" required>
-        <p class="err" data-err="instagram" hidden></p>
+        <p class="err" id="err-instagram" data-err="instagram" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -140,7 +140,7 @@
           </div>
         </div>
         <input type="hidden" id="faturamento" name="faturamento" value="">
-        <p class="err" data-err="faturamento" hidden></p>
+        <p class="err" id="err-faturamento" data-err="faturamento" hidden></p>
       </div>
     </section>
 
@@ -163,7 +163,7 @@
           <input type="checkbox" id="ciente" name="ciente">
           <span><strong>Estou ciente</strong> de que a consultoria Viral Mind Labs é destinada a empresários que já possuem produto ou serviço estruturado e faturamento superior a R$ 500 mil nos últimos 12 meses. Após o envio, minhas respostas serão analisadas e, havendo compatibilidade de perfil, a equipe entrará em contato o mais rápido possível. O investimento no serviço varia entre R$ 8 mil e R$ 20 mil mensais.</span>
         </label>
-        <p class="err" data-err="consent" hidden></p>
+        <p class="err" id="err-consent" data-err="consent" hidden></p>
         <div class="actions">
           <button type="submit" class="btn" id="send">Enviar</button>
         </div>

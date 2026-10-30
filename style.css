@@ -231,9 +231,9 @@ header{position:fixed;top:0;left:0;right:0;z-index:100;display:flex;align-items:
 .faq-item{background:var(--card);border:1px solid rgba(255,255,255,0.08);border-radius:14px;overflow:hidden}
 .faq-q{all:unset;box-sizing:border-box;display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:22px 26px;cursor:pointer;font-family:'Sora',sans-serif;font-size:16px;font-weight:500;color:var(--text)}
 .faq-q:hover{color:var(--accent)}
-.faq-icon{color:rgba(242,243,238,0.4);font-size:20px;line-height:1}
-.faq-item.open .faq-icon{color:var(--accent)}
-.faq-a{padding:0 26px 24px;font-size:14.5px;line-height:1.75;color:rgba(242,243,238,0.6);display:none}
+.faq-icon{color:rgba(242,243,238,0.72);font-size:20px;line-height:1;text-shadow:0 1px 0 rgba(0,0,0,0.55)}
+.faq-item.open .faq-icon{color:var(--accent);text-shadow:none}
+.faq-a{padding:0 26px 24px;font-size:14.5px;line-height:1.75;color:rgba(242,243,238,0.9);text-shadow:0 1px 0 rgba(0,0,0,0.55);display:none}
 .faq-item.open .faq-a{display:block}
 
 /* ---------- aplicação ---------- */

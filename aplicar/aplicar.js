@@ -63,19 +63,56 @@
 
   const emailValido = () => /^[^\s@]+@[^\s@.]+(\.[^\s@.]+)*\.[a-zA-Z]{2,}$/.test(document.getElementById("email").value.trim());
 
-  function showErr(name, msg) {
+  let liveGen = 0;
+
+  function controlFor(name) {
+    if (name === "faturamento") return fatTrigger;
+    if (name === "consent") return document.getElementById("ciente");
+    return document.getElementById(name);
+  }
+
+  function announce(msg) {
+    const gen = ++liveGen;
+    if (!msg) {
+      live.textContent = "";
+      return;
+    }
+    if (live.textContent === msg) {
+      live.textContent = "";
+      window.requestAnimationFrame(() => {
+        if (gen === liveGen) live.textContent = msg;
+      });
+      return;
+    }
+    live.textContent = msg;
+  }
+
+  function showErr(name, msg, fromAttempt) {
     const el = form.querySelector('[data-err="' + name + '"]');
-    const field = document.getElementById(name);
-    if (field) field.classList.toggle("invalid", !!msg);
+    const field = controlFor(name);
+    if (field && name !== "faturamento" && name !== "consent") field.classList.toggle("invalid", !!msg);
     if (name === "faturamento") fatPicker.classList.toggle("is-invalid", !!msg);
+    if (field) {
+      field.setAttribute("aria-invalid", msg ? "true" : "false");
+      if (el && el.id) {
+        if (msg) field.setAttribute("aria-describedby", el.id);
+        else field.removeAttribute("aria-describedby");
+      }
+    }
     if (!el) return;
     if (msg) {
+      const fresh = el.hidden || el.textContent !== msg;
       el.hidden = false;
       el.textContent = msg;
-      live.textContent = msg;
+      if (fresh || fromAttempt) {
+        announce(msg);
+        if (field && document.activeElement !== field) field.focus({ preventScroll: true });
+        el.scrollIntoView({ block: "nearest", inline: "nearest" });
+      }
     } else {
       el.hidden = true;
       el.textContent = "";
+      announce("");
     }
   }
 
@@ -83,10 +120,15 @@
     showErr(name, "");
   }
 
+  function nomeMensagem(value) {
+    const parts = String(value || "").trim().split(/\s+/).filter((part) => /\p{L}/u.test(part));
+    return parts.length >= 2 ? "" : "Digite nome e sobrenome.";
+  }
+
   function validate(name, report) {
     let msg = "";
-    if (name === "nome" && document.getElementById("nome").value.trim().length < 2) {
-      msg = "Informe seu nome completo.";
+    if (name === "nome") {
+      msg = nomeMensagem(document.getElementById("nome").value);
     } else if (name === "email" && !emailValido()) {
       msg = "Informe um e-mail válido, com domínio completo (ex.: nome@empresa.com.br).";
     } else if (name === "whatsapp" && !telValido()) {
@@ -104,7 +146,7 @@
     } else if (name === "consent" && !document.getElementById("ciente").checked) {
       msg = "Para enviar a aplicação, é necessário confirmar que está ciente das condições acima.";
     }
-    if (report) showErr(name, msg);
+    if (report) showErr(name, msg, report === true);
     else if (!msg) clearErr(name);
     return !msg;
   }
@@ -342,13 +384,13 @@
 
   ["nome", "email", "empresa", "ramo", "instagram"].forEach((name) => {
     document.getElementById(name).addEventListener("input", () => {
-      if (document.getElementById(name).classList.contains("invalid")) validate(name, true);
+      if (document.getElementById(name).classList.contains("invalid")) validate(name, "quiet");
     });
   });
 
   telInput.addEventListener("input", () => {
     if (ehBrasil()) telInput.value = mascaraBR(soDigitos(telInput.value).slice(0, 11));
-    if (telInput.classList.contains("invalid")) validate("whatsapp", true);
+    if (telInput.classList.contains("invalid")) validate("whatsapp", "quiet");
   });
   ddiSelect.addEventListener("change", () => {
     telInput.value = ehBrasil() ? mascaraBR(soDigitos(telInput.value).slice(0, 11)) : soDigitos(telInput.value);
