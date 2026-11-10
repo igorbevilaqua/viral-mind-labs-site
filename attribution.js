@@ -2,13 +2,17 @@
 // localStorage (vml_attr_v1) guarda o primeiro toque por 90 dias e o último toque.
 // O jsonb utm sai achatado: chaves do último toque no topo e as mesmas com prefixo
 // first_ para o primeiro. Cada valor é texto de no máximo 200 caracteres.
-// Campanha é qualquer utm_* válido mais gclid e fbclid, até 20 chaves por toque.
+// Campanha é qualquer utm_* válido mais gclid, fbclid e vml_cid, até 20 chaves por toque.
 // O último toque só muda quando a URL traz campanha.
+// A query é lida já normalizada: &amp; vira &, prefixo amp; sai da chave (links do
+// OpenInApp chegam assim) e a primeira ocorrência não vazia vence. O hash nunca é lido.
 (function (root) {
   "use strict";
 
-  var CAMPAIGN_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
+  var CAMPAIGN_KEYS = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid", "vml_cid"];
   var CAMPAIGN_KEY_RE = /^utm_[a-z0-9_]{1,36}$/;
+  var VML_CID_RE = /^[A-Za-z0-9]{16}$/;
+  var ENTITY_AMP_RE = /&(amp|#38|#x26);/gi;
   var CAMPAIGN_KEYS_MAX = 20;
   var CONTEXT_KEYS = ["landing_page", "referrer", "ts"];
   var TOUCH_KEYS = CAMPAIGN_KEYS.concat(CONTEXT_KEYS);
@@ -37,7 +41,57 @@
   }
 
   function isCampaignKey(key) {
-    return key === "gclid" || key === "fbclid" || CAMPAIGN_KEY_RE.test(key);
+    return key === "gclid" || key === "fbclid" || key === "vml_cid" || CAMPAIGN_KEY_RE.test(key);
+  }
+
+  // vml_cid fora do formato é descartado, como se não tivesse vindo.
+  function campaignValue(key, raw) {
+    var value = clip(raw);
+    if (key === "vml_cid" && !VML_CID_RE.test(value)) return "";
+    return value;
+  }
+
+  // &amp;, &#38; e &#x26; viram & até estabilizar (no máximo 5 voltas). %26 fica intacto.
+  function unescapeAmp(query) {
+    var q = query;
+    for (var i = 0; i < 5; i++) {
+      var next = q.replace(ENTITY_AMP_RE, "&");
+      if (next === q) break;
+      q = next;
+    }
+    return q;
+  }
+
+  function normalizeKey(key) {
+    var k = String(key).trim();
+    while (/^amp;/i.test(k)) k = k.slice(4).trim();
+    if (/^(utm_|gclid$|fbclid$|vml_cid$)/i.test(k)) k = k.toLowerCase();
+    return k;
+  }
+
+  // Lê a query (nunca o hash) e devolve as chaves normalizadas, na ordem em que
+  // aparecem, com a primeira ocorrência não vazia de cada uma.
+  function readQuery(search) {
+    var q = typeof search === "string" ? search : "";
+    var hash = q.indexOf("#");
+    if (hash !== -1) q = q.slice(0, hash);
+    var params = new URLSearchParams(unescapeAmp(q));
+    var values = {};
+    var keys = [];
+    params.forEach(function (value, rawKey) {
+      var key = normalizeKey(rawKey);
+      if (!key || Object.prototype.hasOwnProperty.call(values, key)) return;
+      var clean = isCampaignKey(key) ? campaignValue(key, value) : clip(value);
+      if (!clean) return;
+      values[key] = value;
+      keys.push(key);
+    });
+    return {
+      keys: keys,
+      get: function (key) {
+        return Object.prototype.hasOwnProperty.call(values, key) ? values[key] : null;
+      },
+    };
   }
 
   // As chaves conhecidas vêm antes das demais: fixam a ordem e têm prioridade no teto.
@@ -48,7 +102,7 @@
     for (var i = 0; i < ordered.length && count < CAMPAIGN_KEYS_MAX; i++) {
       var key = ordered[i];
       if (!isCampaignKey(key) || out[key]) continue;
-      var value = clip(read(key));
+      var value = campaignValue(key, read(key));
       if (value) {
         out[key] = value;
         count++;
@@ -197,8 +251,8 @@
     }
 
     function currentTouch() {
-      var params = new URLSearchParams(page.search || "");
-      var touch = pickCampaign(Array.from(params.keys()), function (key) { return params.get(key); });
+      var params = readQuery(page.search || "");
+      var touch = pickCampaign(params.keys, params.get);
       var landing = originPath(page.href || "");
       var referrer = originPath(page.referrer || "");
       if (landing) touch.landing_page = landing;
@@ -347,7 +401,10 @@
     CAMPAIGN_KEYS: CAMPAIGN_KEYS,
     CAMPAIGN_KEY_RE: CAMPAIGN_KEY_RE,
     CAMPAIGN_KEYS_MAX: CAMPAIGN_KEYS_MAX,
+    VML_CID_RE: VML_CID_RE,
     isCampaignKey: isCampaignKey,
+    normalizeKey: normalizeKey,
+    readQuery: readQuery,
     TOUCH_KEYS: TOUCH_KEYS,
     VALUE_MAX: VALUE_MAX,
     JSON_MAX: JSON_MAX,

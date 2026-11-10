@@ -2,7 +2,8 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
-const { create, VALUE_MAX, FIRST_TTL_MS, STORAGE_KEY, CAMPAIGN_KEYS_MAX, isCampaignKey } = require("./attribution.js");
+const vm = require("node:vm");
+const { create, VALUE_MAX, FIRST_TTL_MS, STORAGE_KEY, CAMPAIGN_KEYS_MAX, isCampaignKey, readQuery } = require("./attribution.js");
 
 const T0 = Date.parse("2026-10-30T08:00:00.000Z");
 
@@ -305,8 +306,8 @@ test("storage bloqueado ainda leva a campanha da URL e propaga no link", () => {
 test("links de /aplicar recebem só chaves de campanha, também a partir do storage", () => {
   const ctx = setup({
     page: page({
-      href: "https://viralmindlabs.com/?utm_source=ig&email=pessoa@x.com&utm_Foo=nao",
-      search: "?utm_source=ig&email=pessoa@x.com&utm_Foo=nao",
+      href: "https://viralmindlabs.com/?utm_source=ig&email=pessoa@x.com&utm_fo-o=nao",
+      search: "?utm_source=ig&email=pessoa@x.com&utm_fo-o=nao",
     }),
   });
   ctx.api.capture();
@@ -432,10 +433,10 @@ test("html da home e de /aplicar carregam attribution.js com versão", () => {
   const home = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const form = fs.readFileSync(path.join(__dirname, "aplicar/index.html"), "utf8");
   assert.equal(home.match(/href="\/aplicar"/g).length, 3);
-  assert.match(home, /src="\/attribution\.js\?v=14"/);
-  assert.match(form, /src="\/attribution\.js\?v=14"/);
-  assert.match(form, /src="aplicar\.js\?v=14"/);
-  assert.ok(form.indexOf("/attribution.js?v=14") < form.indexOf("aplicar.js?v=14"));
+  assert.match(home, /src="\/attribution\.js\?v=15"/);
+  assert.match(form, /src="\/attribution\.js\?v=15"/);
+  assert.match(form, /src="aplicar\.js\?v=15"/);
+  assert.ok(form.indexOf("/attribution.js?v=15") < form.indexOf("aplicar.js?v=15"));
 });
 
 function campaignPage(search, extra) {
@@ -615,4 +616,248 @@ test("passagem por link com chaves genéricas não vira nova campanha em /aplica
   assert.equal(utm.utm_id, "1");
   assert.equal(utm.landing_page, "https://viralmindlabs.com/");
   assert.equal(utm.referrer, "https://l.instagram.com/");
+});
+
+// Normalização da query (links do OpenInApp chegam com &amp; no lugar de &).
+
+const OPENINAPP_URL = "https://viralmindlabs.com/?utm_source=reels&amp;utm_medium=instagram&amp;utm_content=igorbevilaqua";
+const CID = "Ab3dEf7hIj9kLm1n";
+
+function readAll(search) {
+  const params = readQuery(search);
+  const out = {};
+  params.keys.forEach((key) => { out[key] = params.get(key); });
+  return out;
+}
+
+test("readQuery desfaz &amp;, &#38; e &#x26; e tira o prefixo amp; das chaves", () => {
+  const expected = { utm_source: "reels", utm_medium: "instagram", utm_content: "igorbevilaqua" };
+  assert.deepEqual(readAll("?utm_source=reels&amp;utm_medium=instagram&amp;utm_content=igorbevilaqua"), expected);
+  assert.deepEqual(readAll("?utm_source=reels&amp;amp;utm_medium=instagram&amp;utm_content=igorbevilaqua"), expected);
+  assert.deepEqual(readAll("?utm_source=a&amp;amp;amp;utm_medium=b"), { utm_source: "a", utm_medium: "b" });
+  assert.deepEqual(readAll("?utm_source=a&AMP;UTM_MEDIUM=b"), { utm_source: "a", utm_medium: "b" });
+  assert.deepEqual(readAll("?amp;utm_medium=b"), { utm_medium: "b" });
+  assert.deepEqual(readAll("?utm_source=a&amp;GCLID=g&amp;FbClid=f"), { utm_source: "a", gclid: "g", fbclid: "f" });
+});
+
+test("readQuery: %26 é parte do valor, maiúsculas do valor ficam e a primeira não vazia vence", () => {
+  assert.deepEqual(readAll("?utm_content=a%26b&utm_source=x"), { utm_content: "a&b", utm_source: "x" });
+  assert.deepEqual(readAll("?utm_content=igorbevilaqua.DAbC123xyz"), { utm_content: "igorbevilaqua.DAbC123xyz" });
+  assert.deepEqual(readAll("?utm_source=x&utm_source=y"), { utm_source: "x" });
+  assert.deepEqual(readAll("?utm_source=&utm_source=y"), { utm_source: "y" });
+  assert.deepEqual(readAll("?utm_source=x&amp;utm_source=y&amp;amp;utm_source=z"), { utm_source: "x" });
+  assert.deepEqual(readAll("?utm_source=%20%20&UTM_SOURCE=y"), { utm_source: "y" });
+  assert.doesNotThrow(() => readAll("?utm_source=%E0%A4%A"));
+  assert.ok(readAll("?utm_source=%E0%A4%A").utm_source);
+});
+
+test("readQuery nunca lê o hash, nem quando &#38; ou &#x26; abrem o hash", () => {
+  // Numa URL de verdade o # de &#38; começa o hash, então o resto não é lido.
+  const url = new URL("https://viralmindlabs.com/?utm_source=reels&#38;utm_medium=instagram");
+  assert.equal(url.search, "?utm_source=reels&");
+  assert.deepEqual(readAll(url.search), { utm_source: "reels" });
+  assert.deepEqual(readAll("?utm_source=reels&#x26;utm_medium=instagram"), { utm_source: "reels" });
+  assert.deepEqual(readAll("?utm_source=x#utm_medium=y"), { utm_source: "x" });
+  assert.deepEqual(readAll("#utm_source=x"), {});
+  const ctx = setup({ page: campaignPage("?utm_source=x", { href: "https://viralmindlabs.com/?utm_source=x#utm_medium=y" }) });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "x");
+  assert.equal(Object.hasOwn(utm, "utm_medium"), false);
+});
+
+test("captura com &amp; e espaços: valor com espaço nas pontas é aparado e longo é cortado em 200", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=%20x%20&amp;utm_content=" + "c".repeat(500)) });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "x");
+  assert.equal(utm.utm_content.length, 200);
+});
+
+test("chave de campanha em maiúsculas vira minúscula", () => {
+  const ctx = setup({ page: campaignPage("?UTM_Source=ig&Utm_Medium=bio") });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "ig");
+  assert.equal(utm.utm_medium, "bio");
+});
+
+test("vml_cid válido entra no last, no first, no jsonb e no link para /aplicar", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=reels&vml_cid=" + CID) });
+  const stored = ctx.api.capture();
+  assert.equal(stored.last.vml_cid, CID);
+  assert.equal(stored.first.vml_cid, CID);
+  assert.equal(ctx.api.readStore().last.vml_cid, CID);
+  assert.equal(ctx.api.decorateHref("/aplicar"), "/aplicar?utm_source=reels&vml_cid=" + CID);
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.vml_cid, CID);
+  assert.equal(utm.first_vml_cid, CID);
+  assert.equal(isCampaignKey("vml_cid"), true);
+});
+
+test("vml_cid fora do formato é descartado, na URL e no storage", () => {
+  for (const bad of ["curto", "Ab3dEf7hIj9kLm1n2", "Ab3dEf7hIj9kLm1-", "Ab3dEf7h Ij9kLm1"]) {
+    const ctx = setup({ page: campaignPage("?utm_source=ig&vml_cid=" + encodeURIComponent(bad)) });
+    const utm = ctx.api.forSubmit();
+    assert.equal(Object.hasOwn(utm, "vml_cid"), false, bad);
+    assert.equal(utm.utm_source, "ig");
+  }
+  const only = setup({ page: campaignPage("?vml_cid=lixo") });
+  assert.equal(Object.hasOwn(only.api.forSubmit(), "utm_source"), false);
+  assert.equal(only.api.readStore().last.vml_cid, undefined);
+
+  const ctx = setup();
+  ctx.storage.setItem(STORAGE_KEY, JSON.stringify({
+    first: { utm_source: "ig", vml_cid: "lixo", ts: new Date(T0).toISOString() },
+    last: { utm_source: "ig", vml_cid: CID, ts: new Date(T0).toISOString() },
+  }));
+  assert.equal(ctx.api.readStore().first.vml_cid, undefined);
+  assert.equal(ctx.api.readStore().last.vml_cid, CID);
+});
+
+test("vml_cid inválido não esconde um válido que vem depois", () => {
+  assert.deepEqual(readAll("?vml_cid=lixo&amp;vml_cid=" + CID), { vml_cid: CID });
+});
+
+test("outro vml_cid com a mesma utm é outro clique e troca o last, mesmo em /aplicar", () => {
+  const ctx = setup({ page: campaignPage("?utm_source=reels&vml_cid=" + CID) });
+  ctx.api.capture();
+  const other = "Zz9yXx8wVv7uTt6s";
+  ctx.now = T0 + 1000;
+  visit(ctx, "?utm_source=reels&vml_cid=" + other, "/aplicar");
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.vml_cid, other);
+  assert.equal(utm.first_vml_cid, CID);
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/aplicar");
+});
+
+function aplicarReadUtm(win) {
+  const src = fs.readFileSync(path.join(__dirname, "aplicar/aplicar.js"), "utf8");
+  const body = src.slice(src.indexOf("function readUtm()"), src.indexOf("function configReady"));
+  const utm = vm.runInNewContext(body + "\nreadUtm();", { window: win, URLSearchParams });
+  return utm === null ? null : JSON.parse(JSON.stringify(utm));
+}
+
+test("ponta a ponta: URL do OpenInApp com &amp; chega inteira ao utm que /aplicar envia", () => {
+  const url = new URL(OPENINAPP_URL + "&amp;vml_cid=" + CID);
+  const ctx = setup({ page: campaignPage(url.search, { href: url.href, referrer: "https://l.instagram.com/" }) });
+  ctx.api.start();
+  const cta = link("/aplicar");
+  ctx.links.push(cta);
+  ctx.api.decorateDocument();
+  assert.equal(cta.href, "/aplicar?utm_source=reels&utm_medium=instagram&utm_content=igorbevilaqua&vml_cid=" + CID);
+
+  ctx.now = T0 + 60000;
+  visit(ctx, cta.href.slice(cta.href.indexOf("?")), "/aplicar");
+  const utm = aplicarReadUtm({ VMLAttribution: { forSubmit: ctx.api.forSubmit }, location: { search: ctx.page.search } });
+  assert.equal(utm.utm_source, "reels");
+  assert.equal(utm.utm_medium, "instagram");
+  assert.equal(utm.utm_content, "igorbevilaqua");
+  assert.equal(utm.vml_cid, CID);
+  assert.equal(utm.first_utm_medium, "instagram");
+  assert.equal(utm.first_utm_content, "igorbevilaqua");
+  assert.equal(utm.first_vml_cid, CID);
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.referrer, "https://l.instagram.com/");
+  for (const key of Object.keys(utm)) assert.doesNotMatch(key, /amp;/);
+});
+
+test("ponta a ponta: URL exata do OpenInApp, sem vml_cid, direto em /aplicar", () => {
+  const url = new URL(OPENINAPP_URL.replace("viralmindlabs.com/", "viralmindlabs.com/aplicar"));
+  const ctx = setup({ page: campaignPage(url.search, { href: url.href, pathname: "/aplicar" }) });
+  const utm = aplicarReadUtm({ VMLAttribution: { forSubmit: ctx.api.forSubmit }, location: { search: url.search } });
+  assert.equal(utm.utm_source, "reels");
+  assert.equal(utm.utm_medium, "instagram");
+  assert.equal(utm.utm_content, "igorbevilaqua");
+  assert.equal(Object.hasOwn(utm, "vml_cid"), false);
+});
+
+test("fallback do /aplicar sem attribution.js trata &amp; e vml_cid", () => {
+  const search = new URL(OPENINAPP_URL + "&amp;vml_cid=" + CID + "&amp;amp;UTM_TERM=t&amp;utm_source=outro&email=x@y.com").search;
+  assert.deepEqual(aplicarReadUtm({ location: { search } }), {
+    utm_source: "reels",
+    utm_medium: "instagram",
+    utm_content: "igorbevilaqua",
+    vml_cid: CID,
+    utm_term: "t",
+  });
+  assert.deepEqual(aplicarReadUtm({ location: { search: "?utm_source=&utm_source=y&vml_cid=lixo&utm_content=a%26b" } }), {
+    utm_source: "y",
+    utm_content: "a&b",
+  });
+  assert.equal(aplicarReadUtm({ location: { search: "?vml_cid=lixo#utm_source=x" } }), null);
+  assert.deepEqual(aplicarReadUtm({ location: { search: "?utm_source=ig&utm_medium=bio" } }), { utm_source: "ig", utm_medium: "bio" });
+});
+
+// Script inline do <head> que limpa a URL antes do Clarity.
+
+function headScript(file) {
+  const html = fs.readFileSync(path.join(__dirname, file), "utf8");
+  const head = html.slice(0, html.indexOf("</head>"));
+  const start = head.indexOf("<script>\n  // Links do OpenInApp");
+  assert.ok(start !== -1, file);
+  const end = head.indexOf("</script>", start);
+  return { html: head, start, code: head.slice(start + "<script>".length, end) };
+}
+
+function runHead(search, hash, opts) {
+  const calls = [];
+  const history = {
+    replaceState(state, title, url) {
+      if (opts && opts.fail) throw new Error("SecurityError");
+      calls.push(url);
+    },
+  };
+  const location = { search, hash: hash || "", pathname: (opts && opts.pathname) || "/" };
+  vm.runInNewContext(headScript("index.html").code, { location, history });
+  return calls;
+}
+
+test("script do head é o mesmo nas duas páginas e vem antes do Clarity", () => {
+  const home = headScript("index.html");
+  const form = headScript("aplicar/index.html");
+  assert.equal(home.code, form.code);
+  for (const page of [home, form]) {
+    assert.ok(page.start < page.html.indexOf("clarity.ms"));
+  }
+});
+
+test("script do head limpa a URL do OpenInApp e preserva caminho e hash", () => {
+  const search = new URL(OPENINAPP_URL).search;
+  assert.deepEqual(runHead(search), ["/?utm_source=reels&utm_medium=instagram&utm_content=igorbevilaqua"]);
+  assert.deepEqual(runHead(search + "&amp;vml_cid=" + CID, "#metodo", { pathname: "/aplicar" }), [
+    "/aplicar?utm_source=reels&utm_medium=instagram&utm_content=igorbevilaqua&vml_cid=" + CID + "#metodo",
+  ]);
+  assert.deepEqual(runHead("?utm_source=a&amp;amp;amp;utm_medium=b"), ["/?utm_source=a&utm_medium=b"]);
+  assert.deepEqual(runHead("?utm_source=a&AMP;UTM_MEDIUM=b"), ["/?utm_source=a&utm_medium=b"]);
+  // Só alcançável se a query chegar com o # literal; o navegador manda isso para o hash.
+  assert.deepEqual(runHead("?utm_source=a&#38;utm_medium=b&#x26;utm_term=c"), ["/?utm_source=a&utm_medium=b&utm_term=c"]);
+  assert.deepEqual(runHead("?amp;utm_medium=b"), ["/?utm_medium=b"]);
+  assert.deepEqual(runHead("?utm_source=&amp;utm_source=y&amp;utm_source=z"), ["/?utm_source=y"]);
+  assert.deepEqual(runHead("?utm_content=a%26b&amp;utm_source=x"), ["/?utm_content=a%26b&utm_source=x"]);
+  assert.deepEqual(runHead("?utm_content=igorbevilaqua.DAbC123xyz&amp;utm_source=x"), ["/?utm_content=igorbevilaqua.DAbC123xyz&utm_source=x"]);
+  assert.deepEqual(runHead("?utm_source=%E0%A4%A&amp;utm_medium=b"), ["/?utm_source=%E0%A4%A&utm_medium=b"]);
+});
+
+test("script do head não mexe em URL limpa nem lê o hash", () => {
+  assert.deepEqual(runHead(""), []);
+  assert.deepEqual(runHead("?utm_source=reels&utm_medium=instagram&utm_content=igorbevilaqua"), []);
+  assert.deepEqual(runHead("?UTM_SOURCE=x&utm_source=y"), []);
+  assert.deepEqual(runHead("?utm_source=x", "#a=1&amp;utm_medium=y"), []);
+  assert.deepEqual(runHead("?utm_source=a&", "#38;utm_medium=b"), []);
+  assert.deepEqual(runHead("?utm_source=x&amp;utm_medium=y", "#utm_campaign=z&amp;b=1"), ["/?utm_source=x&utm_medium=y#utm_campaign=z&amp;b=1"]);
+});
+
+test("script do head não quebra a página se replaceState falhar", () => {
+  assert.doesNotThrow(() => runHead("?utm_source=x&amp;utm_medium=y", "", { fail: true }));
+});
+
+test("query limpa pelo head e query crua dão o mesmo utm no envio", () => {
+  const raw = new URL(OPENINAPP_URL + "&amp;vml_cid=" + CID).search;
+  const cleaned = runHead(raw)[0].slice(1);
+  const a = setup({ page: campaignPage(raw) }).api.forSubmit();
+  const b = setup({ page: campaignPage(cleaned) }).api.forSubmit();
+  for (const key of ["landing_page", "first_landing_page"]) {
+    delete a[key];
+    delete b[key];
+  }
+  assert.deepEqual(a, b);
+  assert.equal(b.utm_medium, "instagram");
 });
