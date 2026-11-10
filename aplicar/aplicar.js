@@ -254,16 +254,27 @@
     if (window.VMLAttribution && typeof window.VMLAttribution.forSubmit === "function") {
       return window.VMLAttribution.forSubmit();
     }
-    const params = new URLSearchParams(window.location.search);
-    const keys = Array.from(new Set(params.keys()))
-      .filter((key) => key === "gclid" || key === "fbclid" || /^utm_[a-z0-9_]{1,36}$/.test(key))
-      .slice(0, 20);
+    // Mesma leitura do attribution.js: &amp; vira &, sai o prefixo amp; da chave e a
+    // primeira ocorrência não vazia vence. vml_cid só entra no formato de 16 caracteres.
+    let query = String(window.location.search || "");
+    for (let i = 0; i < 5; i++) {
+      const next = query.replace(/&(amp|#38|#x26);/gi, "&");
+      if (next === query) break;
+      query = next;
+    }
+    const params = new URLSearchParams(query);
     const utm = {};
-    keys.forEach((key) => {
-      const value = params.get(key);
-      if (!value) return;
+    let count = 0;
+    params.forEach((value, rawKey) => {
+      let key = rawKey.trim();
+      while (/^amp;/i.test(key)) key = key.slice(4).trim();
+      if (/^(utm_|gclid$|fbclid$|vml_cid$)/i.test(key)) key = key.toLowerCase();
+      const known = key === "gclid" || key === "fbclid" || key === "vml_cid" || /^utm_[a-z0-9_]{1,36}$/.test(key);
+      if (!known || utm[key] || count >= 20) return;
       const clean = value.replace(/[\u0000-\u001F\u007F]/g, "").trim().slice(0, 200);
-      if (clean) utm[key] = clean;
+      if (!clean || (key === "vml_cid" && !/^[A-Za-z0-9]{16}$/.test(clean))) return;
+      utm[key] = clean;
+      count++;
     });
     return Object.keys(utm).length ? utm : null;
   }

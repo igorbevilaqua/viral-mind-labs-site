@@ -20,6 +20,42 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Sora:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css?v=12">
+<script>
+  // Links do OpenInApp chegam com &amp; no lugar de &. Limpa a query antes do Clarity
+  // e do attribution.js: &amp; vira &, sai o prefixo amp; da chave, chave de campanha
+  // em minúsculas e a primeira ocorrência não vazia vence. O hash fica como veio.
+  (function (l, h) {
+    try {
+      var s = l.search;
+      if (!s || !/&(amp|#38|#x26);|[?&]amp;/i.test(s)) return;
+      var q = s.slice(1), i, next;
+      for (i = 0; i < 5; i++) {
+        next = q.replace(/&(amp|#38|#x26);/gi, "&");
+        if (next === q) break;
+        q = next;
+      }
+      var dec = function (x) { try { return decodeURIComponent(x.replace(/\+/g, " ")); } catch (err) { return x; } };
+      var parts = q.split("&"), out = [], seen = {};
+      for (i = 0; i < parts.length; i++) {
+        if (!parts[i]) continue;
+        var eq = parts[i].indexOf("=");
+        var key = dec(eq < 0 ? parts[i] : parts[i].slice(0, eq)).trim();
+        var val = eq < 0 ? "" : parts[i].slice(eq + 1);
+        while (/^amp;/i.test(key)) key = key.slice(4).trim();
+        if (!key) continue;
+        if (/^(utm_|gclid$|fbclid$|vml_cid$)/i.test(key)) {
+          key = key.toLowerCase();
+          if (!dec(val).trim() || seen["k" + key]) continue;
+          seen["k" + key] = 1;
+        }
+        out.push(encodeURIComponent(key) + (eq < 0 ? "" : "=" + val));
+      }
+      var clean = out.join("&");
+      if ("?" + clean === s) return;
+      h.replaceState(null, "", l.pathname + (clean ? "?" + clean : "") + l.hash);
+    } catch (err) {}
+  })(location, history);
+</script>
 <script type="text/javascript">
     (function(c,l,a,r,i,t,y){
         c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};
@@ -545,7 +581,7 @@
   <span class="footer-copy">© 2026 Viral Mind Labs</span>
 </footer>
 
-<script src="/attribution.js?v=14"></script>
+<script src="/attribution.js?v=15"></script>
 <script src="script.js?v=12"></script>
 </body>
 </html>
