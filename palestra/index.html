@@ -50,6 +50,18 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 .th .n{position:absolute;left:5px;top:4px;font:500 10px var(--mono);color:#cfc6b6;background:rgba(14,13,12,.75);padding:1px 4px;border-radius:3px;z-index:2}
 .th.cur .box{border-color:var(--a);box-shadow:0 0 0 1px var(--a),0 0 14px rgba(242,180,65,.35)}
 .th:hover .box{border-color:rgba(242,180,65,.5)}
+/* v3.4: arrastar miniaturas para mudar a ordem (só fora da tela cheia) */
+body.edit:not(.fs) .th{cursor:grab;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.th.drag-src{opacity:.3}
+body.th-dragging,body.th-dragging *{cursor:grabbing!important;user-select:none!important}
+#dropInd{position:fixed;width:4px;margin-left:-2px;background:var(--a);border-radius:2px;box-shadow:0 0 12px rgba(242,180,65,.8);pointer-events:none;display:none;z-index:61}
+#dropInd::before,#dropInd::after{content:'';position:absolute;left:-4px;width:12px;height:4px;background:var(--a);border-radius:2px}
+#dropInd::before{top:-2px}#dropInd::after{bottom:-2px}
+#dropInd.on{display:block}
+.th-ghost{position:fixed;z-index:60;pointer-events:none;opacity:.92;transform:rotate(-2deg) scale(1.06);filter:drop-shadow(0 10px 22px rgba(0,0,0,.6))}
+.th-ghost .box{border-color:var(--a)!important}
+body.fs #dropInd,body.fs .th-ghost{display:none!important}
+#bOrder[hidden]{display:none!important}
 #toast{position:fixed;left:50%;bottom:140px;transform:translateX(-50%) translateY(20px);opacity:0;background:#1A1816;border:1px solid rgba(242,180,65,.4);color:var(--txt);font:500 13px var(--sans);padding:9px 14px;border-radius:8px;transition:.25s;pointer-events:none;z-index:50}
 #toast.show{opacity:1;transform:translateX(-50%)}
 #black{position:fixed;inset:0;background:#000;z-index:100;display:none;cursor:none}
@@ -261,6 +273,7 @@ body.edit .slide.cur .frame:not(.has):hover .ph{display:block;color:#F2B441}
     <span id="status">salvo</span>
     <label class="sw" title="Mostrar/ocultar o botão voltar na tela"><input type="checkbox" id="backTg"><span class="tr"></span>Botão voltar</label>
     <button class="btn" id="bNotes" title="Mostrar/ocultar notas">Notas <kbd>N</kbd></button>
+    <button class="btn" id="bOrder" title="Voltar os slides para a ordem original do arquivo" hidden>Restaurar ordem</button>
     <button class="btn" id="bRestore" title="Descartar todas as edições">Restaurar original</button>
     <button class="btn" id="bSave" title="Baixar HTML com edições e imagens embutidas">Salvar HTML</button>
     <button class="btn pri" id="bFs" title="Tela cheia">Tela cheia <kbd>F</kbd></button>
@@ -382,6 +395,12 @@ Array.prototype.forEach.call(document.querySelectorAll('#canvas [data-k="tayOrig
 var $=function(s,r){return (r||document).querySelector(s)}, $$=function(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))};
 var W=1920,H=1080, body=document.body, canvas=$('#canvas'), wrap=$('#wrap');
 var slides=$$('#canvas > .slide'), N=slides.length, cur=0, scale=1;
+/* v3.4: identidade fixa de cada slide = posição no arquivo (as edições e o ORIG usam essa chave, mesmo se a ordem mudar) */
+slides.forEach(function(s,i){s.setAttribute('data-oid',i)});
+var SLIDES_TAIL=slides.length?slides[slides.length-1].nextSibling:null, orderDirty=false;
+function oidOf(s){return +s.getAttribute('data-oid')}
+function byOid(o){o=+o;for(var k=0;k<slides.length;k++)if(oidOf(slides[k])===o)return slides[k];return null}
+function isOrigOrder(){return slides.every(function(s,i){return oidOf(s)===i})}
 var REV=(document.querySelector('meta[name="deck-rev"]')||{}).content||'0';
 var KEY='palestra-h4-v1::'+REV;
 var ORIG=JSON.parse(document.getElementById('orig').textContent);
@@ -425,9 +444,11 @@ function persist(){
   clearTimeout(sT); status('salvando…');
   sT=setTimeout(function(){
     var st=loadState()||{s:{},n:{}};
-    Object.keys(dirty).forEach(function(i){st.s[i]=cleanInner(slides[i].querySelector('.c'))});
-    Object.keys(notesDirty).forEach(function(i){st.n[i]=slides[i].querySelector('aside.notes').innerHTML});
-    try{localStorage.setItem(KEY,JSON.stringify(st));dirty={};notesDirty={};status('salvo · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}
+    /* v3.4: chaves = data-oid (posição no arquivo), não a posição atual */
+    Object.keys(dirty).forEach(function(o){var e=byOid(o);if(e)st.s[o]=cleanInner(e.querySelector('.c'))});
+    Object.keys(notesDirty).forEach(function(o){var e=byOid(o);if(e)st.n[o]=e.querySelector('aside.notes').innerHTML});
+    if(isOrigOrder())delete st.o;else st.o=slides.map(oidOf);
+    try{localStorage.setItem(KEY,JSON.stringify(st));dirty={};notesDirty={};orderDirty=false;status('salvo · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}
     catch(e){status('não salvo');toast('Armazenamento local cheio (imagens grandes). Use “Salvar HTML” para guardar tudo.')}
   },350);
 }
@@ -441,7 +462,12 @@ function applyState(){
   var st=loadState(); if(!st)return;
   Object.keys(st.s||{}).forEach(function(i){if(slides[i])slides[i].querySelector('.c').innerHTML=st.s[i]});
   Object.keys(st.n||{}).forEach(function(i){if(slides[i])slides[i].querySelector('aside.notes').innerHTML=st.n[i]});
+  if(st.o)applyOrder(st.o);
 }
+/* v3.4: ordem dos slides. arr = lista de data-oid na ordem desejada. */
+function validOrder(arr){if(!Array.isArray(arr)||arr.length!==N)return false;var seen={};for(var k=0;k<N;k++){var v=arr[k];if(typeof v!=='number'||v<0||v>=N||v%1||seen[v])return false;seen[v]=1}return true}
+function placeSlides(){slides.forEach(function(s){canvas.insertBefore(s,SLIDES_TAIL)})}
+function applyOrder(arr){if(!validOrder(arr))return false;var m={};slides.forEach(function(s){m[oidOf(s)]=s});slides=arr.map(function(o){return m[o]});placeSlides();return true}
 
 /* ---------- thumbnails ---------- */
 var strip=$('#strip'), thumbs=[];
@@ -450,7 +476,7 @@ function buildThumbs(){
   slides.forEach(function(s,i){
     var d=document.createElement('div');d.className='th';d.title=(i+1)+' · '+s.dataset.idea;
     d.innerHTML='<span class="n">'+String(i+1).padStart(2,'0')+'</span><div class="box"></div>';
-    d.addEventListener('click',function(){go(i)});
+    d.addEventListener('click',function(){go(thumbs.indexOf(d))});
     strip.appendChild(d);thumbs.push(d);refreshThumb(i);
   });
 }
@@ -466,7 +492,7 @@ var thT={};function refreshThumbSoon(i){clearTimeout(thT[i]);thT[i]=setTimeout(f
 /* ---------- notes drawer ---------- */
 var ned=$('#notesEd');
 function showNotes(){ned.innerHTML=slides[cur].querySelector('aside.notes').innerHTML;$('#dIdea').textContent=String(cur+1).padStart(2,'0')+' · '+slides[cur].dataset.block+' · '+slides[cur].dataset.idea}
-ned.addEventListener('input',function(){slides[cur].querySelector('aside.notes').innerHTML=ned.innerHTML;notesDirty[cur]=1;persist()});
+ned.addEventListener('input',function(){slides[cur].querySelector('aside.notes').innerHTML=ned.innerHTML;notesDirty[oidOf(slides[cur])]=1;persist()});
 function toggleNotes(){$('#drawer').classList.toggle('closed');$('#bNotes').classList.toggle('on',!$('#drawer').classList.contains('closed'));layout()}
 /* v3: notas OCULTAS por padrão. Abrem só pelo botão "Notas" ou pela tecla N (fora da tela cheia). */
 $('#dHd').addEventListener('click',toggleNotes);$('#bNotes').addEventListener('click',function(){this.blur();toggleNotes()});
@@ -688,7 +714,7 @@ var tx=null;wrap.addEventListener('touchstart',function(e){tx=e.touches[0].clien
 wrap.addEventListener('touchend',function(e){if(tx===null||editing())return;var dx=e.changedTouches[0].clientX-tx;if(Math.abs(dx)>50){dx<0?next():prev()}tx=null});
 
 /* ---------- inline editing ---------- */
-canvas.addEventListener('input',function(e){var s=e.target.closest&&e.target.closest('.slide');if(!s)return;var i=slides.indexOf(s);dirty[i]=1;persist();refreshThumbSoon(i)});
+canvas.addEventListener('input',function(e){var s=e.target.closest&&e.target.closest('.slide');if(!s)return;var i=slides.indexOf(s);if(i<0)return;dirty[oidOf(s)]=1;persist();refreshThumbSoon(i)});
 canvas.addEventListener('paste',function(e){if(!e.target.closest||!e.target.closest('.t'))return;e.preventDefault();var t=(e.clipboardData||window.clipboardData).getData('text/plain');document.execCommand('insertText',false,t)});
 ned.addEventListener('paste',function(e){e.preventDefault();document.execCommand('insertText',false,(e.clipboardData||window.clipboardData).getData('text/plain'))});
 
@@ -705,7 +731,7 @@ fileIn.addEventListener('change',function(){if(fileIn.files[0]&&target)putImage(
 canvas.addEventListener('dragover',function(e){var f=e.target.closest&&e.target.closest('.frame');if(f&&!isFs()){e.preventDefault();f.classList.add('drag')}});
 canvas.addEventListener('dragleave',function(e){var f=e.target.closest&&e.target.closest('.frame');if(f)f.classList.remove('drag')});
 canvas.addEventListener('drop',function(e){var f=e.target.closest&&e.target.closest('.frame');if(!f||isFs())return;e.preventDefault();f.classList.remove('drag');var file=e.dataTransfer.files[0];if(file&&/^image\//.test(file.type))putImage(f,file)});
-function mark(fr){var i=slides.indexOf(fr.closest('.slide'));dirty[i]=1;persist();refreshThumbSoon(i)}
+function mark(fr){var s=fr.closest('.slide'),i=slides.indexOf(s);if(i<0)return;dirty[oidOf(s)]=1;persist();refreshThumbSoon(i)}
 function putImage(fr,file){
   var rd=new FileReader();
   rd.onload=function(){
@@ -733,7 +759,11 @@ function saveHtml(){
   $$('[contenteditable]',doc).forEach(function(e){e.removeAttribute('contenteditable')});
   $$('[spellcheck]',doc).forEach(function(e){e.removeAttribute('spellcheck')});
   var b=doc.querySelector('body');b.className='edit'+(body.classList.contains('noback')?' noback':'');
-  $$('#canvas > .slide',doc).forEach(function(s,i){s.classList.remove('cur','anim');s.removeAttribute('style')});
+  $$('#canvas > .slide',doc).forEach(function(s,i){s.classList.remove('cur','anim','drag-src');s.removeAttribute('style');s.removeAttribute('data-oid');s.setAttribute('data-i',i+1)});
+  /* v3.4: o arquivo salvo já sai na ordem atual; o ORIG (Restaurar original) acompanha essa ordem */
+  var ordO=slides.map(oidOf), oj=doc.querySelector('#orig');
+  if(oj&&!isOrigOrder())oj.textContent=JSON.stringify(ordO.map(function(o){return ORIG[o]})).replace(/</g,'\\u003c');
+  $$('#dropInd,.th-ghost',doc).forEach(function(e){e.remove()});b.classList.remove('th-dragging');
   doc.querySelector('#strip').innerHTML='';doc.querySelector('#notesEd').innerHTML='';
   doc.querySelector('#black').className='';doc.querySelector('#toast').className='';
   doc.querySelector('#canvas').removeAttribute('style');
@@ -748,15 +778,139 @@ $('#bSave').addEventListener('click',saveHtml);
 $('#bRestore').addEventListener('click',function(){
   if(!confirm('Restaurar o deck original? Todas as edições de texto, notas e imagens inseridas serão descartadas.'))return;
   finishAnims();
-  slides.forEach(function(s,i){s.querySelector('.c').innerHTML=restoreImgs(ORIG[i].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[i].n});
+  var curEl=slides[cur];applyOrder(slides.map(function(s,i){return i}));cur=slides.indexOf(curEl);
+  slides.forEach(function(s){var o=oidOf(s);s.querySelector('.c').innerHTML=restoreImgs(ORIG[o].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[o].n});
   try{localStorage.removeItem(KEY)}catch(e){}
-  dirty={};notesDirty={};setEditable(!isFs());buildThumbs();go(cur);showNotes();status('original');toast('Deck original restaurado');
+  dirty={};notesDirty={};orderDirty=false;setEditable(!isFs());buildThumbs();go(cur);markCur();showNotes();updateOrderBtn();status('original');toast('Deck original restaurado');
 });
+
+/* ---------- v3.4: mudar a ordem arrastando as miniaturas (só no modo de edição, fora da tela cheia) ---------- */
+function markCur(){thumbs.forEach(function(t,k){t.classList.toggle('cur',k===cur)})}
+function renumberThumbs(){thumbs.forEach(function(t,k){t.querySelector('.n').textContent=String(k+1).padStart(2,'0');t.title=(k+1)+' · '+slides[k].dataset.idea+' (arraste para mudar a ordem)'})}
+function updateOrderBtn(){$('#bOrder').hidden=isOrigOrder()}
+function afterReorder(){
+  renumberThumbs();markCur();
+  $('#cIn').value=String(cur+1).padStart(2,'0');
+  showNotes();
+  try{history.replaceState(null,'','#'+(cur+1))}catch(e){}
+  updateOrderBtn();orderDirty=true;persist();
+}
+function moveSlide(from,to){
+  if(from===to||from<0||to<0||from>=N||to>=N)return;
+  finishAnims();
+  if(document.activeElement&&document.activeElement.isContentEditable)document.activeElement.blur();
+  var curEl=slides[cur], el=slides.splice(from,1)[0];slides.splice(to,0,el);placeSlides();
+  var t=thumbs.splice(from,1)[0];thumbs.splice(to,0,t);
+  var sl=strip.scrollLeft;thumbs.forEach(function(x){strip.appendChild(x)});strip.scrollLeft=sl;
+  cur=slides.indexOf(curEl);
+  afterReorder();
+  toast('Slide '+(from+1)+' → posição '+(to+1)+' · '+el.dataset.idea);
+}
+$('#bOrder').addEventListener('click',function(){
+  this.blur();
+  if(isOrigOrder())return;
+  if(!confirm('Voltar os slides para a ordem original? Os textos, notas e imagens editados continuam.'))return;
+  finishAnims();
+  var curEl=slides[cur];applyOrder(slides.map(function(s,i){return i}));cur=slides.indexOf(curEl);
+  buildThumbs();afterReorder();
+  toast('Ordem original restaurada');
+});
+var dg=null, dropInd=document.createElement('div'), suppressClick=false;
+dropInd.id='dropInd';document.body.appendChild(dropInd);
+function canDrag(){return body.classList.contains('edit')&&!isFs()}
+function dropPos(x){for(var k=0;k<thumbs.length;k++){var r=thumbs[k].getBoundingClientRect();if(x<r.left+r.width/2)return k}return thumbs.length}
+function paintDrag(){
+  if(!dg||!dg.on)return;
+  dg.ghost.style.left=(dg.x-dg.ox)+'px';dg.ghost.style.top=(dg.y-dg.oy-22)+'px';
+  var pos=dropPos(dg.x);dg.pos=pos;
+  if(pos===dg.from||pos===dg.from+1){dropInd.classList.remove('on');return}
+  var sr=strip.getBoundingClientRect(), bx, gap=10;
+  if(pos<thumbs.length)bx=thumbs[pos].querySelector('.box').getBoundingClientRect().left-gap/2;
+  else bx=thumbs[thumbs.length-1].querySelector('.box').getBoundingClientRect().right+gap/2;
+  var r0=thumbs[0].querySelector('.box').getBoundingClientRect();
+  if(bx<sr.left||bx>sr.right){dropInd.classList.remove('on');return}
+  dropInd.style.left=bx+'px';dropInd.style.top=(r0.top-6)+'px';dropInd.style.height=(r0.height+12)+'px';
+  dropInd.classList.add('on');
+}
+function dragTick(){
+  if(!dg||!dg.on)return;
+  var sr=strip.getBoundingClientRect(), edge=56;
+  if(dg.x<sr.left+edge)strip.scrollLeft-=Math.ceil((sr.left+edge-dg.x)/4);
+  else if(dg.x>sr.right-edge)strip.scrollLeft+=Math.ceil((dg.x-(sr.right-edge))/4);
+  paintDrag();
+  requestAnimationFrame(dragTick);
+}
+function dragBegin(){
+  var th=thumbs[dg.from], r=th.getBoundingClientRect();
+  dg.on=true;dg.ox=dg.x0-r.left;dg.oy=dg.y0-r.top;
+  var g=th.cloneNode(true);g.className='th th-ghost';g.style.width=r.width+'px';g.removeAttribute('title');
+  document.body.appendChild(g);dg.ghost=g;
+  th.classList.add('drag-src');body.classList.add('th-dragging');
+  paintDrag();requestAnimationFrame(dragTick);
+}
+function dragCleanup(){
+  if(!dg)return;
+  clearTimeout(dg.lp);
+  if(dg.ghost)dg.ghost.remove();
+  if(thumbs[dg.from])thumbs[dg.from].classList.remove('drag-src');
+  body.classList.remove('th-dragging');dropInd.classList.remove('on');
+  dg=null;
+}
+function dragEnd(cancel){
+  if(!dg)return;
+  var was=dg.on, from=dg.from, pos=dg.pos;
+  dragCleanup();
+  if(!was)return;
+  suppressClick=true;setTimeout(function(){suppressClick=false},0);
+  if(cancel||pos===undefined)return;
+  var to=pos>from?pos-1:pos;
+  if(to!==from)moveSlide(from,to);
+}
+strip.addEventListener('click',function(e){if(suppressClick){e.stopPropagation();e.preventDefault();suppressClick=false}},true);
+/* mouse / caneta */
+strip.addEventListener('pointerdown',function(e){
+  if(e.pointerType==='touch'||e.button!==0||!canDrag())return;
+  var th=e.target.closest&&e.target.closest('.th');if(!th)return;
+  var i=thumbs.indexOf(th);if(i<0)return;
+  e.preventDefault();
+  dg={from:i,x0:e.clientX,y0:e.clientY,x:e.clientX,y:e.clientY,on:false};
+});
+document.addEventListener('pointermove',function(e){
+  if(!dg||dg.touch)return;
+  dg.x=e.clientX;dg.y=e.clientY;
+  if(!dg.on){if(Math.abs(dg.x-dg.x0)+Math.abs(dg.y-dg.y0)>6)dragBegin();return}
+  paintDrag();
+});
+document.addEventListener('pointerup',function(e){if(dg&&!dg.touch)dragEnd(false)});
+document.addEventListener('pointercancel',function(e){if(dg&&!dg.touch)dragEnd(true)});
+/* toque: segure ~0,4 s na miniatura e arraste */
+strip.addEventListener('touchstart',function(e){
+  if(!canDrag()||e.touches.length!==1)return;
+  var th=e.target.closest&&e.target.closest('.th');if(!th)return;
+  var i=thumbs.indexOf(th);if(i<0)return;
+  var t=e.touches[0];
+  dragCleanup();
+  dg={from:i,x0:t.clientX,y0:t.clientY,x:t.clientX,y:t.clientY,on:false,touch:true};
+  dg.lp=setTimeout(function(){if(dg&&dg.touch&&!dg.on)dragBegin()},400);
+},{passive:true});
+strip.addEventListener('touchmove',function(e){
+  if(!dg||!dg.touch)return;
+  var t=e.touches[0];dg.x=t.clientX;dg.y=t.clientY;
+  if(!dg.on){if(Math.abs(dg.x-dg.x0)+Math.abs(dg.y-dg.y0)>8)dragCleanup();return}
+  e.preventDefault();paintDrag();
+},{passive:false});
+strip.addEventListener('touchend',function(e){if(dg&&dg.touch){if(dg.on)e.preventDefault();dragEnd(false)}});
+strip.addEventListener('touchcancel',function(){if(dg&&dg.touch)dragEnd(true)});
+strip.addEventListener('contextmenu',function(e){if(dg&&dg.touch)e.preventDefault()});
+document.addEventListener('keydown',function(e){if(dg&&dg.on&&e.key==='Escape'){e.preventDefault();e.stopPropagation();dragEnd(true)}},true);
+document.addEventListener('fullscreenchange',function(){if(dg)dragEnd(true)});
 
 /* ---------- init ---------- */
 applyState();
 setEditable(true);
 buildThumbs();
+renumberThumbs();
+updateOrderBtn();
 var h=parseInt((location.hash||'').slice(1),10);
 cur=(h>=1&&h<=N)?h-1:0;
 go(cur);
