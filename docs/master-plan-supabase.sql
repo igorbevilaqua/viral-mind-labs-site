@@ -14,6 +14,11 @@
 -- service_role (painel, webhook, edge function) ignora RLS e continua lendo.
 --
 -- Sem a tabela no Viral Data, o envio da página falha de forma explícita.
+--
+-- Depois desta tabela, para os leads caírem no CRM: ver docs/master-plan-leads-webhook.sql
+-- (ordem: esta tabela, depois o CRM, depois o webhook). O Cockpit lê esta tabela direto.
+-- As UTMs ficam no jsonb utm, no mesmo formato de site_applications (último toque no topo,
+-- primeiro toque com prefixo first_, landing_page, referrer e ts).
 
 create table if not exists public.site_master_plan_applications (
   id uuid primary key default gen_random_uuid(),

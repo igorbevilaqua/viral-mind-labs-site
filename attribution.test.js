@@ -429,14 +429,113 @@ test("payload dos outros campos do formulário permanece o mesmo", () => {
   assert.match(src, /window\.VMLAttribution/);
 });
 
-test("html da home e de /aplicar carregam attribution.js com versão", () => {
+test("html da home, de /aplicar e do Master Plan carregam attribution.js com versão", () => {
   const home = fs.readFileSync(path.join(__dirname, "index.html"), "utf8");
   const form = fs.readFileSync(path.join(__dirname, "aplicar/index.html"), "utf8");
+  const mp = fs.readFileSync(path.join(__dirname, "aplicar-masterplan-vm/index.html"), "utf8");
   assert.equal(home.match(/href="\/aplicar"/g).length, 3);
-  assert.match(home, /src="\/attribution\.js\?v=15"/);
-  assert.match(form, /src="\/attribution\.js\?v=15"/);
+  assert.match(home, /src="\/attribution\.js\?v=16"/);
+  assert.match(form, /src="\/attribution\.js\?v=16"/);
   assert.match(form, /src="aplicar\.js\?v=15"/);
-  assert.ok(form.indexOf("/attribution.js?v=15") < form.indexOf("aplicar.js?v=15"));
+  assert.ok(form.indexOf("/attribution.js?v=16") < form.indexOf("aplicar.js?v=15"));
+  assert.match(mp, /src="\/attribution\.js\?v=16"/);
+  assert.match(mp, /src="masterplan\.js\?v=2"/);
+  assert.ok(mp.indexOf("/attribution.js?v=16") < mp.indexOf("masterplan.js?v=2"));
+});
+
+const QR_PALESTRA = "?utm_source=palestra&utm_medium=qrcode&utm_campaign=mrpad-2026-11-21";
+
+test("QR da palestra direto no Master Plan leva source, medium, campaign e a landing", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/aplicar-masterplan-vm/" + QR_PALESTRA,
+      search: QR_PALESTRA,
+      pathname: "/aplicar-masterplan-vm/",
+      referrer: "",
+    }),
+  });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "palestra");
+  assert.equal(utm.utm_medium, "qrcode");
+  assert.equal(utm.utm_campaign, "mrpad-2026-11-21");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/aplicar-masterplan-vm/");
+  assert.equal(utm.first_utm_source, "palestra");
+  assert.equal(Object.hasOwn(utm, "referrer"), false);
+});
+
+test("QR da palestra com &amp; do leitor ainda chega limpo no envio", () => {
+  const sujo = "?utm_source=palestra&amp;utm_medium=qrcode&amp;utm_campaign=mrpad-2026-11-21";
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/aplicar-masterplan-vm/" + sujo,
+      search: sujo,
+      pathname: "/aplicar-masterplan-vm/",
+    }),
+  });
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "palestra");
+  assert.equal(utm.utm_medium, "qrcode");
+  assert.equal(utm.utm_campaign, "mrpad-2026-11-21");
+});
+
+test("Master Plan sem query usa a campanha guardada da entrada", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/" + QR_PALESTRA,
+      search: QR_PALESTRA,
+      referrer: "",
+    }),
+  });
+  ctx.api.capture();
+  ctx.now = T0 + 60 * 60 * 1000;
+  ctx.page.href = "https://viralmindlabs.com/aplicar-masterplan-vm/";
+  ctx.page.search = "";
+  ctx.page.pathname = "/aplicar-masterplan-vm/";
+  ctx.page.referrer = "https://viralmindlabs.com/";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.utm_source, "palestra");
+  assert.equal(utm.utm_campaign, "mrpad-2026-11-21");
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+});
+
+test("Master Plan com a mesma campanha preserva a landing da entrada, como /aplicar", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/" + QR_PALESTRA,
+      search: QR_PALESTRA,
+      referrer: "https://l.instagram.com/",
+    }),
+  });
+  ctx.api.capture();
+  ctx.page.href = "https://viralmindlabs.com/aplicar-masterplan-vm/" + QR_PALESTRA;
+  ctx.page.search = QR_PALESTRA;
+  ctx.page.pathname = "/aplicar-masterplan-vm/";
+  ctx.page.referrer = "https://viralmindlabs.com/";
+  const utm = ctx.api.forSubmit();
+  assert.equal(utm.landing_page, "https://viralmindlabs.com/");
+  assert.equal(utm.referrer, "https://l.instagram.com/");
+});
+
+test("links para o Master Plan também recebem a campanha guardada", () => {
+  const ctx = setup({
+    page: page({
+      href: "https://viralmindlabs.com/?utm_source=ig&utm_content=bio",
+      search: "?utm_source=ig&utm_content=bio",
+    }),
+  });
+  ctx.api.capture();
+  assert.equal(ctx.api.decorateHref("/aplicar-masterplan-vm/"), "/aplicar-masterplan-vm/?utm_source=ig&utm_content=bio");
+  assert.equal(ctx.api.decorateHref("/aplicar-masterplan-vmx"), "/aplicar-masterplan-vmx");
+});
+
+test("payload do Master Plan manda as 11 respostas e o utm do attribution.js", () => {
+  const src = fs.readFileSync(path.join(__dirname, "aplicar-masterplan-vm/masterplan.js"), "utf8");
+  const payload = src.slice(src.indexOf("function payload()"), src.indexOf("function describeSubmitError"));
+  for (const field of ["nome", "email", "ddi", "whatsapp", "faturamento", "papel", "instagram", "tiktok", "nao_tem_tiktok", "reconhecido", "primeira_impressao", "deseja_que_pensem", "publico_desejado", "consent", "user_agent", "utm"]) {
+    assert.match(payload, new RegExp(field + ":"));
+  }
+  assert.match(src, /utm: readUtm\(\)/);
+  assert.match(src, /window\.VMLAttribution\.forSubmit\(\)/);
 });
 
 function campaignPage(search, extra) {

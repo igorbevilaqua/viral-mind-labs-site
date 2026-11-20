@@ -1,4 +1,4 @@
-// Atribuição da entrada em viralmindlabs.com até o POST de /aplicar.
+// Atribuição da entrada em viralmindlabs.com até o POST de /aplicar e de /aplicar-masterplan-vm.
 // localStorage (vml_attr_v1) guarda o primeiro toque por 90 dias e o último toque.
 // O jsonb utm sai achatado: chaves do último toque no topo e as mesmas com prefixo
 // first_ para o primeiro. Cada valor é texto de no máximo 200 caracteres.
@@ -197,7 +197,7 @@
   function isAplicarPath(pathname) {
     var path = pathname || "";
     if (path.length > 1 && path.charAt(path.length - 1) === "/") path = path.slice(0, -1);
-    return path === "/aplicar";
+    return path === "/aplicar" || path === "/aplicar-masterplan-vm";
   }
 
   function shrink(obj, jsonMax) {
