@@ -59,3 +59,17 @@
     height: 44px;
   }
 }
+
+.success-title{
+  font-family:'Instrument Serif',serif;
+  font-weight:400;
+  font-size:clamp(38px,5.6vw,60px);
+  line-height:1.06;
+  margin:0 auto 10px;
+}
+.success-kicker{
+  font-size:18px;
+  font-weight:600;
+  margin:0 auto 16px;
+  color:var(--text);
+}

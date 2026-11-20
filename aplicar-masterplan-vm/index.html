@@ -78,7 +78,7 @@
       <input id="hp_check" name="hp_check" type="text" tabindex="-1" autocomplete="off">
     </div>
 
-    <!-- TEXTOS PROVISÓRIOS: promessa, oferta e mensagem de sucesso ainda serão lapidados com o Igor. Sem preço. -->
+    <!-- TEXTOS PROVISÓRIOS: promessa e oferta ainda serão lapidados com o Igor. Sem preço. -->
     <section class="step is-current" data-step="welcome">
       <div class="col col-center">
         <p class="provisional">Texto provisório</p>
@@ -240,7 +240,7 @@
         <h2 class="q">Antes de enviar, confirme que está ciente.<span class="req" aria-hidden="true">*</span></h2>
         <label class="consent">
           <input type="checkbox" id="ciente" name="ciente">
-          <span><strong>Estou ciente</strong> de que o Master Plan VM é destinado a empresários que já possuem produto ou serviço estruturado. Após o envio, minhas respostas serão analisadas e, havendo compatibilidade de perfil, a equipe entrará em contato o mais rápido possível. <em style="font-style:italic;color:rgba(242,243,238,0.5)">[PLACEHOLDER] Texto da oferta e condições ainda será lapidado com o Igor.</em></span>
+          <span><strong>Estou ciente</strong> de que o Master Plan VM é destinado a empresários que já possuem produto ou serviço estruturado. Após o envio, minhas respostas serão analisadas e, havendo compatibilidade de perfil, a equipe entrará em contato o mais rápido possível.</span>
         </label>
         <p class="err" id="err-consent" data-err="consent" hidden></p>
         <div class="actions">
@@ -251,10 +251,10 @@
 
     <section class="step is-below" data-step="success">
       <div class="col col-center">
-        <p class="provisional">Texto provisório</p>
         <svg class="check" width="56" height="56" viewBox="0 0 56 56" aria-hidden="true"><circle cx="28" cy="28" r="27" fill="none" stroke="#F5D03B" stroke-width="1.5"></circle><path d="M17 29l8 8 14-16" stroke="#F5D03B" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"></path></svg>
-        <h2 class="done">Respostas <em>enviadas</em>.</h2>
-        <p class="support">[PLACEHOLDER] Mensagem de sucesso ainda será lapidada com o Igor. Suas respostas serão analisadas pela nossa equipe.</p>
+        <h2 class="success-title" id="success-title">Masterplan VM</h2>
+        <p class="success-kicker" id="success-subtitle">Respostas enviadas</p>
+        <p class="support" id="success-body">Suas informações já foram enviadas para o nosso time de estratégia. Em até 7 dias você receberá a análise e o plano de viralização de autoridade, baseado no seu perfil e no seu objetivo de crescimento.</p>
         <a class="btn" href="/">Voltar ao início</a>
       </div>
     </section>
@@ -274,6 +274,6 @@
 <script src="/attribution.js?v=15"></script>
 <script src="/aplicar/paises.js"></script>
 <script src="/aplicar/config.js"></script>
-<script src="masterplan.js?v=1"></script>
+<script src="masterplan.js?v=2"></script>
 </body>
 </html>
