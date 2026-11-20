@@ -21,6 +21,25 @@
   const TEXTAREAS = ["reconhecido", "primeira_impressao", "deseja_que_pensem", "publico_desejado"];
   const TABLE = "site_master_plan_applications";
 
+  // Texto da tela de sucesso. O final do parágrafo ainda será confirmado com o Igor.
+  // Para alterar, edite só este objeto. Se mudar depois do merge, suba o ?v= do
+  // masterplan.js em index.html para o cache não servir o texto antigo.
+  const SUCCESS_COPY = {
+    title: "Masterplan VM",
+    subtitle: "Respostas enviadas",
+    body: "Suas informações já foram enviadas para o nosso time de estratégia. Em até 7 dias você receberá a análise e o plano de viralização de autoridade, baseado no seu perfil e no seu objetivo de crescimento.",
+  };
+
+  function applySuccessCopy() {
+    const title = document.getElementById("success-title");
+    const subtitle = document.getElementById("success-subtitle");
+    const body = document.getElementById("success-body");
+    if (title) title.textContent = SUCCESS_COPY.title;
+    if (subtitle) subtitle.textContent = SUCCESS_COPY.subtitle;
+    if (body) body.textContent = SUCCESS_COPY.body;
+  }
+
+
   const form = document.getElementById("apply-form");
   const viewport = form;
   const progress = document.getElementById("progress");
@@ -450,6 +469,7 @@
     fatTrigger.setAttribute("aria-expanded", "false");
   }
 
+  applySuccessCopy();
   fillCountries();
   syncTiktokUi();
   syncChrome();
