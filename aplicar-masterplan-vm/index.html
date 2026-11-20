@@ -82,7 +82,7 @@
     <section class="step is-current" data-step="welcome">
       <div class="col col-center">
         <h1 class="welcome-title">Master Plan <span class="mark">VM<svg viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true"><path d="M16 46 C 22 16, 188 8, 202 34 C 214 56, 176 74, 36 68 C 10 64, 4 36, 24 24" fill="none" stroke="#F5D03B" stroke-width="3" stroke-linecap="round"/></svg></span></h1>
-        <p class="support">Responda 9 perguntas rápidas, uma de cada vez. Com elas, nosso time de estratégia monta a análise e o plano de viralização de autoridade do seu perfil.</p>
+        <p class="support">Responda 10 perguntas rápidas, uma de cada vez. Com elas, nosso time de estratégia monta a análise e o plano de viralização de autoridade do seu perfil.</p>
         <p class="support">Cada resposta é lida pela nossa equipe. Em até 7 dias você recebe o retorno.</p>
         <button type="button" class="btn" id="start">Iniciar</button>
       </div>
@@ -126,9 +126,33 @@
       </div>
     </section>
 
+    <section class="step is-below" data-step="empresa">
+      <div class="col">
+        <h2 class="q">Qual é o nome da sua empresa?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="empresa" name="empresa" class="line" type="text" autocomplete="organization" placeholder="Nome da empresa" required>
+        <p class="err" id="err-empresa" data-err="empresa" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="step is-below" data-step="papel">
+      <div class="col">
+        <h2 class="q">Qual é o seu papel na empresa?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="papel" name="papel" class="line" type="text" placeholder="Ex.: fundador, CEO, sócio" required>
+        <p class="err" id="err-papel" data-err="papel" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">pressione Enter ↵</span>
+        </div>
+      </div>
+    </section>
+
     <section class="step is-below" data-step="faturamento">
       <div class="col">
-        <h2 class="q">Qual foi o faturamento anual da sua empresa nos últimos 12 meses?<span class="req" aria-hidden="true">*</span></h2>
+        <h2 class="q">Qual foi o faturamento da sua empresa nos últimos 12 meses?<span class="req" aria-hidden="true">*</span></h2>
         <div class="picker" id="fat-picker">
           <button type="button" class="picker-trigger" id="fat-trigger" aria-haspopup="listbox" aria-expanded="false" aria-controls="fat-panel">
             <span id="fat-label">Escreve ou seleciona uma opção</span>
@@ -146,11 +170,11 @@
       </div>
     </section>
 
-    <section class="step is-below" data-step="papel">
+    <section class="step is-below" data-step="produto_servico">
       <div class="col">
-        <h2 class="q">Qual é o seu papel na empresa?<span class="req" aria-hidden="true">*</span></h2>
-        <input id="papel" name="papel" class="line" type="text" placeholder="Ex.: fundador, CEO, sócio" required>
-        <p class="err" id="err-papel" data-err="papel" hidden></p>
+        <h2 class="q">Qual produto ou serviço a sua empresa vende?<span class="req" aria-hidden="true">*</span></h2>
+        <input id="produto_servico" name="produto_servico" class="line" type="text" placeholder="Ex.: consultoria financeira, clínica de estética" required>
+        <p class="err" id="err-produto_servico" data-err="produto_servico" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
           <span class="hint">pressione Enter ↵</span>
@@ -160,34 +184,19 @@
 
     <section class="step is-below" data-step="instagram">
       <div class="col">
-        <h2 class="q">Qual é o @ ou link do seu Instagram?<span class="req" aria-hidden="true">*</span></h2>
-        <input id="instagram" name="instagram" class="line" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="@seuperfil ou instagram.com/seuperfil" required>
+        <h2 class="q">Qual é o @ ou link do Instagram da sua empresa?</h2>
+        <input id="instagram" name="instagram" class="line" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="@suaempresa (opcional)">
         <p class="err" id="err-instagram" data-err="instagram" hidden></p>
         <div class="actions">
           <button type="button" class="ok" data-go>OK</button>
-          <span class="hint">pressione Enter ↵</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="step is-below" data-step="tiktok">
-      <div class="col">
-        <h2 class="q">Qual é o link do seu TikTok?<span class="req" aria-hidden="true">*</span></h2>
-        <input id="tiktok" name="tiktok" class="line" type="text" inputmode="url" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="tiktok.com/@seuperfil">
-        <input type="hidden" id="nao_tem_tiktok" name="nao_tem_tiktok" value="false">
-        <p class="tiktok-status" id="tiktok-status" hidden>Marcado: não tenho TikTok.</p>
-        <p class="err" id="err-tiktok" data-err="tiktok" hidden></p>
-        <div class="actions">
-          <button type="button" class="ok" data-go>OK</button>
-          <button type="button" class="opt" id="tiktok-none">Não tenho</button>
-          <span class="hint">pressione Enter ↵</span>
+          <span class="hint">Opcional · pressione Enter ↵</span>
         </div>
       </div>
     </section>
 
     <section class="step is-below" data-step="reconhecido">
       <div class="col">
-        <h2 class="q">Como você quer ser reconhecido(a) no seu nicho nas redes?<span class="req" aria-hidden="true">*</span></h2>
+        <h2 class="q">Como você quer ser reconhecido(a) no seu nicho nas redes sociais?<span class="req" aria-hidden="true">*</span></h2>
         <textarea id="reconhecido" name="reconhecido" class="line" rows="3" placeholder="Responde aqui..." required></textarea>
         <p class="err" id="err-reconhecido" data-err="reconhecido" hidden></p>
         <div class="actions">
@@ -251,6 +260,6 @@
 <script src="/attribution.js?v=16"></script>
 <script src="/aplicar/paises.js"></script>
 <script src="/aplicar/config.js"></script>
-<script src="masterplan.js?v=3"></script>
+<script src="masterplan.js?v=4"></script>
 </body>
 </html>

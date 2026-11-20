@@ -6,16 +6,17 @@
     "nome",
     "email",
     "whatsapp",
-    "faturamento",
+    "empresa",
     "papel",
+    "faturamento",
+    "produto_servico",
     "instagram",
-    "tiktok",
     "reconhecido",
     "publico_desejado",
     "consent",
     "success",
   ];
-  const TEXT_FIELDS = ["nome", "email", "papel", "instagram", "tiktok"];
+  const TEXT_FIELDS = ["nome", "email", "empresa", "papel", "produto_servico", "instagram"];
   const TEXTAREAS = ["reconhecido", "publico_desejado"];
   const TABLE = "site_master_plan_applications";
 
@@ -53,13 +54,9 @@
   const fatPanel = document.getElementById("fat-panel");
   const fatLabel = document.getElementById("fat-label");
   const fatValue = document.getElementById("faturamento");
-  const tiktokInput = document.getElementById("tiktok");
-  const tiktokNoneBtn = document.getElementById("tiktok-none");
-  const tiktokStatus = document.getElementById("tiktok-status");
-  const tiktokFlag = document.getElementById("nao_tem_tiktok");
 
   const motionOk = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const state = { index: 0, lock: false, sending: false, fat: "", noTiktok: false, queued: null, dest: 0 };
+  const state = { index: 0, lock: false, sending: false, fat: "", queued: null, dest: 0 };
 
   const soDigitos = (s) => String(s || "").replace(/\D/g, "");
   const ehBrasil = () => ddiSelect.value === "55";
@@ -163,23 +160,6 @@
     return parts.length >= 2 ? "" : "Digite nome e sobrenome.";
   }
 
-  function syncTiktokUi() {
-    tiktokFlag.value = state.noTiktok ? "true" : "false";
-    tiktokNoneBtn.classList.toggle("is-selected", state.noTiktok);
-    tiktokStatus.hidden = !state.noTiktok;
-    tiktokInput.disabled = state.noTiktok;
-    if (state.noTiktok) tiktokInput.value = "";
-  }
-
-  function setNoTiktok(value, advanceAfter) {
-    state.noTiktok = !!value;
-    syncTiktokUi();
-    clearErr("tiktok");
-    if (advanceAfter && stepName() === "tiktok") {
-      window.setTimeout(() => advance(), motionOk ? 180 : 0);
-    }
-  }
-
   function validate(name, report) {
     let msg = "";
     if (name === "nome") {
@@ -194,10 +174,10 @@
       msg = "Selecione uma faixa de faturamento.";
     } else if (name === "papel" && !document.getElementById("papel").value.trim()) {
       msg = "Informe o seu papel na empresa.";
-    } else if (name === "instagram" && !document.getElementById("instagram").value.trim()) {
-      msg = "Informe o @ ou o link do Instagram.";
-    } else if (name === "tiktok" && !state.noTiktok && !tiktokInput.value.trim()) {
-      msg = "Informe o link do TikTok ou escolha “Não tenho”.";
+    } else if (name === "empresa" && !document.getElementById("empresa").value.trim()) {
+      msg = "Informe o nome da sua empresa.";
+    } else if (name === "produto_servico" && !document.getElementById("produto_servico").value.trim()) {
+      msg = "Informe o produto ou serviço que a sua empresa vende.";
     } else if (TEXTAREAS.indexOf(name) !== -1 && !document.getElementById(name).value.trim()) {
       msg = "Responda esta pergunta para continuar.";
     } else if (name === "consent" && !document.getElementById("ciente").checked) {
@@ -351,9 +331,13 @@
       whatsapp: ("+" + ddi + " " + telInput.value.trim()).trim(),
       faturamento: state.fat,
       papel: document.getElementById("papel").value.trim(),
-      instagram: document.getElementById("instagram").value.trim(),
-      tiktok: state.noTiktok ? null : tiktokInput.value.trim(),
-      nao_tem_tiktok: !!state.noTiktok,
+      empresa: document.getElementById("empresa").value.trim(),
+      produto_servico: document.getElementById("produto_servico").value.trim(),
+      // Instagram da empresa é opcional: vazio vai como null.
+      instagram: document.getElementById("instagram").value.trim() || null,
+      // Pergunta do TikTok removida em 20/11 (Igor). Colunas ficam no banco, opcionais.
+      tiktok: null,
+      nao_tem_tiktok: null,
       reconhecido: document.getElementById("reconhecido").value.trim(),
       // Perguntas retiradas em 20/11 (decisão do Igor). As colunas ficam no banco,
       // opcionais depois da migration; enviamos null de forma explícita.
@@ -471,14 +455,12 @@
 
   applySuccessCopy();
   fillCountries();
-  syncTiktokUi();
   syncChrome();
 
   document.getElementById("start").addEventListener("click", () => go(1, 1));
   form.querySelectorAll("[data-go]").forEach((btn) => btn.addEventListener("click", advance));
   prevBtn.addEventListener("click", back);
   nextBtn.addEventListener("click", advance);
-  tiktokNoneBtn.addEventListener("click", () => setNoTiktok(true, true));
 
   form.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -488,7 +470,6 @@
 
   TEXT_FIELDS.forEach((name) => {
     document.getElementById(name).addEventListener("input", () => {
-      if (name === "tiktok") setNoTiktok(false, false);
       if (document.getElementById(name).classList.contains("invalid")) validate(name, "quiet");
     });
   });
