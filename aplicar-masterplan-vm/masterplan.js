@@ -11,14 +11,12 @@
     "instagram",
     "tiktok",
     "reconhecido",
-    "primeira_impressao",
-    "deseja_que_pensem",
     "publico_desejado",
     "consent",
     "success",
   ];
   const TEXT_FIELDS = ["nome", "email", "papel", "instagram", "tiktok"];
-  const TEXTAREAS = ["reconhecido", "primeira_impressao", "deseja_que_pensem", "publico_desejado"];
+  const TEXTAREAS = ["reconhecido", "publico_desejado"];
   const TABLE = "site_master_plan_applications";
 
   // Texto da tela de sucesso. O final do parágrafo ainda será confirmado com o Igor.
@@ -357,8 +355,10 @@
       tiktok: state.noTiktok ? null : tiktokInput.value.trim(),
       nao_tem_tiktok: !!state.noTiktok,
       reconhecido: document.getElementById("reconhecido").value.trim(),
-      primeira_impressao: document.getElementById("primeira_impressao").value.trim(),
-      deseja_que_pensem: document.getElementById("deseja_que_pensem").value.trim(),
+      // Perguntas retiradas em 20/11 (decisão do Igor). As colunas ficam no banco,
+      // opcionais depois da migration; enviamos null de forma explícita.
+      primeira_impressao: null,
+      deseja_que_pensem: null,
       publico_desejado: document.getElementById("publico_desejado").value.trim(),
       consent: true,
       user_agent: (navigator.userAgent || "").slice(0, 500),
