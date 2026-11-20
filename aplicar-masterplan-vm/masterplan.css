@@ -1,0 +1,47 @@
+/* Extensões pontuais sobre /aplicar/aplicar.css. Não altera o formulário /aplicar. */
+
+.opt{
+  appearance:none;
+  border:1px solid rgba(242,243,238,0.38);
+  background:transparent;
+  color:var(--text);
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:0.08em;
+  border-radius:6px;
+  padding:8px 16px;
+  cursor:pointer;
+}
+.opt:hover,.opt.is-selected{
+  border-color:var(--accent);
+  color:var(--accent);
+}
+.opt:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:3px;
+}
+
+.provisional{
+  display:inline-block;
+  margin:0 0 14px;
+  padding:3px 8px;
+  border:1px solid rgba(245,208,59,0.45);
+  border-radius:999px;
+  font-size:10px;
+  font-weight:600;
+  letter-spacing:0.14em;
+  text-transform:uppercase;
+  color:var(--accent);
+}
+
+.tiktok-status{
+  margin:10px 0 0;
+  font-size:13px;
+  color:var(--accent);
+}
+.tiktok-status[hidden]{display:none}
+
+.line[disabled]{
+  opacity:.55;
+  cursor:default;
+}
