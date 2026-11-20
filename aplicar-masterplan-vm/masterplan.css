@@ -45,3 +45,17 @@
   opacity:.55;
   cursor:default;
 }
+
+/* Mobile: alvos de toque com no mínimo 44px. Só esta página (não mexe no /aplicar). */
+@media (max-width: 640px) {
+  .ok,
+  .opt {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 16px;
+  }
+  .pager button {
+    width: 44px;
+    height: 44px;
+  }
+}
