@@ -28,7 +28,10 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #counter{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--mono);color:var(--mut)}
 #counter input{width:42px;height:28px;text-align:center;border-radius:6px;border:1px solid var(--line);background:#141311;color:var(--txt);font:500 13px var(--mono)}
 #status{font:400 11px var(--mono);color:var(--dim);letter-spacing:.06em;text-transform:uppercase;min-width:90px;text-align:right}
-#status.rm-off{color:#F2B441;cursor:pointer}
+#status.rm-off{color:#F2B441}
+#bPub[disabled]{opacity:.45;cursor:default}
+#bPub.pend{border-color:#F2B441;color:#F2B441}
+#bPub.pend::before{content:'';width:7px;height:7px;border-radius:50%;background:#F2B441}
 #main{flex:1;display:flex;align-items:stretch;min-height:0;position:relative}
 .nav{flex:0 0 56px;display:flex;align-items:center;justify-content:center;font-size:44px;line-height:1;color:var(--mut);transition:color .15s,background .15s;user-select:none}
 .nav:hover{color:var(--a);background:rgba(242,180,65,.04)}
@@ -275,6 +278,7 @@ body.edit .slide.cur .frame:not(.has):hover .ph{display:block;color:#F2B441}
     <label class="sw" title="Mostrar/ocultar o botão voltar na tela"><input type="checkbox" id="backTg"><span class="tr"></span>Botão voltar</label>
     <button class="btn" id="bNotes" title="Mostrar/ocultar notas">Notas <kbd>N</kbd></button>
     <button class="btn" id="bOrder" title="Voltar os slides para a ordem original do arquivo" hidden>Restaurar ordem</button>
+    <button class="btn pub" id="bPub" type="button" hidden disabled title="Nada pendente para publicar">Salvar</button>
     <button class="btn" id="bRestore" title="Descartar todas as edições">Restaurar original</button>
     <button class="btn" id="bSave" title="Baixar HTML com edições e imagens embutidas">Salvar HTML</button>
     <button class="btn pri" id="bFs" title="Tela cheia">Tela cheia <kbd>F</kbd></button>
@@ -793,7 +797,7 @@ $('#bRestore').addEventListener('click',function(){
   var curEl=slides[cur];applyOrder(slides.map(function(s,i){return i}));cur=slides.indexOf(curEl);
   slides.forEach(function(s){var o=oidOf(s);s.querySelector('.c').innerHTML=restoreImgs(ORIG[o].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[o].n});
   try{localStorage.removeItem(KEY)}catch(e){}
-  dirty={};notesDirty={};orderDirty=false;setEditable(!isFs());buildThumbs();go(cur);markCur();showNotes();updateOrderBtn();status('original');toast('Deck original restaurado');remoteClear();
+  dirty={};notesDirty={};orderDirty=false;setEditable(!isFs());buildThumbs();go(cur);markCur();showNotes();updateOrderBtn();status('original');toast('Deck original restaurado');if(RM_ON){var sy=syncGet();sy.pend=1;syncSet(sy);pubBtn();rmStatus('original · não publicado',1)}
 });
 
 /* ---------- v3.4: mudar a ordem arrastando as miniaturas (só no modo de edição, fora da tela cheia) ---------- */
@@ -918,12 +922,13 @@ document.addEventListener('keydown',function(e){if(dg&&dg.on&&e.key==='Escape'){
 document.addEventListener('fullscreenchange',function(){if(dg)dragEnd(true)});
 
 /* ---------- v3.5: estado salvo online (Supabase Viral Data, tabela public.palestra_estado) ----------
-   Leitura pública; escrita só pela RPC salvar_palestra_estado, que confere a senha de edição.
-   Sem rede (ou sem a tabela), tudo continua salvando só neste navegador, como antes. */
+   Leitura pública; escrita só pela RPC salvar_palestra_estado, que confere a senha.
+   v3.6: as edições ficam neste navegador (pendentes) até apertar Salvar, que pede a senha e publica tudo.
+   Sem rede (ou sem a tabela), tudo continua salvo só neste navegador. */
 var RM={url:'https://qclvrddrqulgfzccndnl.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbHZyZGRycXVsZ2Z6Y2NuZG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0NjY2NzMsImV4cCI6MjA4MTA0MjY3M30.nIrCbMmkaRXf5OhIkIVUIHf-u-F4twYZIQX_aKlctl8'};
 var RM_ON=/^https?:$/.test(location.protocol)&&/(^|\.)viralmindlabs\.com$|^localhost$|^127\.0\.0\.1$/.test(location.hostname)&&!!window.fetch&&!/[?&]remoto=0(&|$)/.test(location.search);
-var PWK='palestra-senha-edicao', SYK=KEY+'::sync', NOPW='palestra-sem-online', BKK=KEY+'::backup-local';
-var rmBusy=false, rmAgain=false, rmT, rmGen=0;
+var SYK=KEY+'::sync', BKK=KEY+'::backup-local';
+var rmBusy=false;
 function syncGet(){try{return JSON.parse(localStorage.getItem(SYK)||'null')||{}}catch(e){return {}}}
 function syncSet(o){try{localStorage.setItem(SYK,JSON.stringify(o||{}))}catch(e){}}
 function hhmm(d){var x=d?new Date(d):new Date();if(isNaN(x))x=new Date();return x.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
@@ -942,44 +947,42 @@ function rmFetch(path,opt,ms){
 function packHtml(h){h=String(h);Object.keys(IMGS).forEach(function(k){var v=IMGS[k];if(v&&v.length>200&&h.indexOf(v)>=0)h=h.split(v).join('__IMG'+k+'__')});if(QR&&QR.length>200&&h.indexOf(QR)>=0)h=h.split(QR).join('__QR__');return h}
 function unpackHtml(h){return restoreImgs(String(h).split('__QR__').join(QR))}
 function mapSN(st,f){var o={};Object.keys(st).forEach(function(k){o[k]=st[k]});['s','n'].forEach(function(k){o[k]={};Object.keys(st[k]||{}).forEach(function(i){o[k][i]=f(st[k][i])})});return o}
-function hasPw(){try{return !!localStorage.getItem(PWK)}catch(e){return false}}
-function askPw(force,msg){
-  var p=null;try{p=localStorage.getItem(PWK)}catch(e){}if(p)return p;
-  var no=false;try{no=sessionStorage.getItem(NOPW)==='1'}catch(e){}if(no&&!force)return null;
-  p=window.prompt(msg||'Senha de edição para salvar online (a palestra fica igual em qualquer computador).\nCancele para salvar só neste navegador.','');
-  p=(p||'').trim();
-  if(!p){try{sessionStorage.setItem(NOPW,'1')}catch(e){}return null}
-  try{localStorage.setItem(PWK,p);sessionStorage.removeItem(NOPW)}catch(e){}
-  return p;
+function rmStatus(m,off){var e=$('#status');e.classList.toggle('rm-off',!!off);status(m)}
+/* botão Salvar: habilitado só com edição pendente (não publicada) */
+function pubBtn(){var b=$('#bPub');if(!b)return;var p=RM_ON&&!!syncGet().pend;b.hidden=!RM_ON;b.disabled=!p||rmBusy;b.classList.toggle('pend',p);b.title=p?'Há edições não publicadas. Salvar publica online (pede a senha).':'Nada pendente para publicar'}
+/* chamado depois de cada salvamento local: marca como pendente, não publica sozinho */
+function remoteAfterLocal(){if(!RM_ON)return;var sy=syncGet();sy.pend=1;syncSet(sy);pubBtn();rmStatus('não publicado · salvo neste navegador',1)}
+function rmFail(e){
+  if(e&&(e.code==='28P01'||/senha_invalida/.test(e.message||''))){rmStatus('senha errada · não publicado',1);toast('Senha errada. As edições continuam aqui, pendentes.')}
+  else if(e&&(e.status===404||e.code==='PGRST202'||e.code==='PGRST205'||e.code==='42P01')){rmStatus('online indisponível · não publicado',1);toast('Salvamento online indisponível. As edições continuam aqui, pendentes.')}
+  else{rmStatus('falhou online · não publicado',1);toast('Não consegui publicar (sem conexão?). As edições continuam aqui, pendentes.')}
 }
-function rmStatus(m,off){var e=$('#status');e.classList.toggle('rm-off',!!off);e.title=off?'Clique para tentar salvar online de novo':'';status(m)}
-function rmFail(e,what){
-  if(e&&(e.code==='28P01'||/senha_invalida/.test(e.message||''))){try{localStorage.removeItem(PWK)}catch(x){}rmStatus('senha errada · só neste navegador',1);toast('Senha de edição errada. Clique no status para tentar de novo.')}
-  else if(e&&(e.status===404||e.code==='PGRST202'||e.code==='PGRST205'||e.code==='42P01'))rmStatus('online indisponível · só neste navegador',1);
-  else{rmStatus('falhou online · salvo só neste navegador',1);toast('Não consegui '+what+' online. Ficou só neste navegador; clique no status para tentar de novo.')}
+/* Salvar: pede a senha toda vez e publica tudo o que está salvo neste navegador (ou limpa o online, se foi restaurado o original) */
+function publish(){
+  if(!RM_ON||rmBusy||!syncGet().pend)return;
+  clearTimeout(sT);
+  if(Object.keys(dirty).length||Object.keys(notesDirty).length||orderDirty){/* garante que a última digitação já entrou no navegador */
+    var st0=loadState()||{s:{},n:{}};
+    Object.keys(dirty).forEach(function(o){var e=byOid(o);if(e)st0.s[o]=cleanInner(e.querySelector('.c'))});
+    Object.keys(notesDirty).forEach(function(o){var e=byOid(o);if(e)st0.n[o]=e.querySelector('aside.notes').innerHTML});
+    if(isOrigOrder())delete st0.o;else st0.o=slides.map(oidOf);
+    try{localStorage.setItem(KEY,JSON.stringify(st0));dirty={};notesDirty={};orderDirty=false}catch(e){}
+  }
+  var pw=window.prompt('Senha para publicar as edições online (valem em qualquer computador que abrir a palestra):','');
+  if(pw===null)return;pw=pw.trim();if(!pw){toast('Sem senha, nada foi publicado.');return}
+  var st=loadState();
+  rmBusy=true;pubBtn();status('publicando…');
+  var req=st?rmFetch('/rest/v1/rpc/salvar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw,p_versao:REV,p_estado:mapSN(st,packHtml)})},25000)
+            :rmFetch('/rest/v1/rpc/limpar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw})},8000).then(function(){return null});
+  req.then(function(at){
+    var now=loadState();
+    /* se nada mudou durante o envio, fica limpo */
+    var same=JSON.stringify(now)===JSON.stringify(st);
+    syncSet(st?{at:at,pend:same?0:1}:{pend:now?1:0});
+    rmStatus(st?'publicado online · '+hhmm():'original publicado online',!same);toast(st?'Edições publicadas online':'Original publicado online');
+  },function(e){rmFail(e)}).then(function(){rmBusy=false;pubBtn()});
 }
-/* chamado depois de cada salvamento local */
-function remoteAfterLocal(){if(!RM_ON)return;rmGen++;var sy=syncGet();sy.pend=1;syncSet(sy);clearTimeout(rmT);rmT=setTimeout(function(){remoteSave(false)},1200)}
-function remoteSave(force){
-  if(!RM_ON)return;
-  if(rmBusy){rmAgain=true;return}
-  var st=loadState();if(!st)return;
-  var pw=askPw(force);if(!pw){rmStatus('salvo só neste navegador',1);return}
-  var g=rmGen;rmBusy=true;status('salvando online…');
-  rmFetch('/rest/v1/rpc/salvar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw,p_versao:REV,p_estado:mapSN(st,packHtml)})},25000)
-  .then(function(at){var sy=syncGet();sy.at=at;if(g===rmGen)sy.pend=0;syncSet(sy);rmStatus('salvo online · '+hhmm())},function(e){rmFail(e,'salvar')})
-  .then(function(){rmBusy=false;if(rmAgain){rmAgain=false;remoteSave(false)}});
-}
-/* "Restaurar original": apaga também o estado online (pede a senha se ainda não tiver) */
-function remoteClear(){
-  if(!RM_ON)return;clearTimeout(rmT);rmGen++;
-  var pw=askPw(true,'Senha de edição para restaurar o original também online (em todos os computadores).\nCancele para restaurar só neste navegador.');
-  if(!pw){var sy=syncGet();sy.pend=1;syncSet(sy);rmStatus('original só neste navegador',1);return}
-  rmBusy=true;status('restaurando online…');
-  rmFetch('/rest/v1/rpc/limpar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw})},8000)
-  .then(function(){syncSet({});rmStatus('original · online também')},function(e){var sy=syncGet();sy.pend=1;syncSet(sy);rmFail(e,'restaurar')})
-  .then(function(){rmBusy=false});
-}
+$('#bPub').addEventListener('click',function(){this.blur();publish()});
 function resetToOrig(){
   applyOrder(slides.map(function(s,i){return i}));
   slides.forEach(function(s){var o=oidOf(s);s.querySelector('.c').innerHTML=restoreImgs(ORIG[o].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[o].n});
@@ -987,32 +990,33 @@ function resetToOrig(){
 function busyEditing(){return rmBusy||Object.keys(dirty).length>0||Object.keys(notesDirty).length>0||orderDirty||editing()||!!dg}
 function rebuildAfter(curEl,msg){
   cur=Math.max(0,slides.indexOf(curEl));
-  setEditable(!isFs());buildThumbs();renumberThumbs();go(cur);markCur();showNotes();updateOrderBtn();rmStatus(msg);
+  setEditable(!isFs());buildThumbs();renumberThumbs();go(cur);markCur();showNotes();updateOrderBtn();rmStatus(msg);pubBtn();
 }
-/* ao abrir: busca o estado online (até 3 s). Sem rede: fica o que já estava (navegador ou original). */
+/* ao abrir: busca o estado publicado (até 3 s). Sem rede: fica o que já estava (navegador ou original).
+   Edições pendentes neste navegador continuam pendentes, a não ser que haja uma versão publicada mais nova (aí a publicada vence e a local vai para um backup). */
 function remoteLoad(){
-  if(!RM_ON)return;
+  if(!RM_ON)return;pubBtn();
+  if(syncGet().pend)rmStatus('não publicado · salvo neste navegador',1);
   rmFetch('/rest/v1/palestra_estado?id=eq.palestra&select=versao,estado,updated_at',null,3000).then(function(rows){
     var row=Array.isArray(rows)?rows[0]:null, sy=syncGet(), curEl;
     if(!row){
-      /* nada online. Se este navegador já tinha sincronizado, o original foi restaurado em outro aparelho */
+      /* nada online. Se este navegador estava sincronizado e sem pendência, o original foi publicado em outro aparelho */
       if(sy.at&&!sy.pend&&!busyEditing()){curEl=slides[cur];finishAnims();resetToOrig();try{localStorage.removeItem(KEY)}catch(e){}syncSet({});rebuildAfter(curEl,'original (online)')}
-      else if(sy.pend&&hasPw())remoteSave(false);
       return;
     }
-    if(sameAt(sy.at,row.updated_at)){if(sy.pend&&hasPw())remoteSave(false);return}
+    if(sameAt(sy.at,row.updated_at))return;
     var st=migRemote(row.versao,row.estado);if(!st)return;
-    if(busyEditing()){toast('Há uma versão online mais nova. Recarregue a página para carregar.');return}
+    if(busyEditing()){toast('Há uma versão publicada mais nova. Recarregue a página para carregar.');return}
     var loc=null;try{loc=localStorage.getItem(KEY)}catch(e){}
-    if(loc&&(sy.pend||!sy.at)){try{localStorage.setItem(BKK,loc)}catch(e){}if(sy.pend)toast('Carreguei a versão online mais recente. O que estava só neste navegador ficou guardado num backup.')}
+    if(loc&&(sy.pend||!sy.at)){try{localStorage.setItem(BKK,loc)}catch(e){}if(sy.pend)toast('Carreguei a versão publicada mais recente. O que estava pendente neste navegador ficou num backup.')}
     st=mapSN(st,unpackHtml);
     curEl=slides[cur];finishAnims();resetToOrig();applyState(st);
     try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
     syncSet({at:row.updated_at});
     rebuildAfter(curEl,'online · '+hhmm(row.updated_at));
-  }).catch(function(){if(syncGet().pend)rmStatus('salvo só neste navegador',1)});
+  }).catch(function(){});
 }
-$('#status').addEventListener('click',function(){if(RM_ON&&syncGet().pend)remoteSave(true)});
+
 
 /* ---------- init ---------- */
 applyState();
