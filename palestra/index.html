@@ -28,6 +28,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #counter{display:inline-flex;align-items:center;gap:6px;font:500 13px var(--mono);color:var(--mut)}
 #counter input{width:42px;height:28px;text-align:center;border-radius:6px;border:1px solid var(--line);background:#141311;color:var(--txt);font:500 13px var(--mono)}
 #status{font:400 11px var(--mono);color:var(--dim);letter-spacing:.06em;text-transform:uppercase;min-width:90px;text-align:right}
+#status.rm-off{color:#F2B441;cursor:pointer}
 #main{flex:1;display:flex;align-items:stretch;min-height:0;position:relative}
 .nav{flex:0 0 56px;display:flex;align-items:center;justify-content:center;font-size:44px;line-height:1;color:var(--mut);transition:color .15s,background .15s;user-select:none}
 .nav:hover{color:var(--a);background:rgba(242,180,65,.04)}
@@ -400,14 +401,18 @@ function isOrigOrder(){return slides.every(function(s,i){return oidOf(s)===i})}
 var REV=(document.querySelector('meta[name="deck-rev"]')||{}).content||'0';
 var KEY='palestra-h4-v1::'+REV;
 /* revisão final: saíram os slides 11, 12 e 13 da versão de 39 (Eduque, Venda e a cópia de Entretenha), depois o caso Cadu · BomPreço (20 na versão de 39) e os slides Felipe · 19,1 mi e Variação · 12,3 mi (25 e 26 na versão de 39) viraram um slide só com 3 passos. Ordem e edições salvas nas versões anteriores são remapeadas para a numeração nova; edições dos slides removidos ou juntados são descartadas (o conteúdo deles mudou). */
-(function(){try{if(localStorage.getItem(KEY))return;
+var MIG=(function(){
 var m35o=function(o){return o<20?o:(o===20?20:(o===21?-1:o-1))},m35c=function(o){return (o===20||o===21)?-1:m35o(o)};
 var m36=function(o){return o<16?o:(o===16?-1:o-1)},m39=function(o){return o<10?o:(o<=12?-1:(o<=18?o-3:(o===19?-1:o-4)))};
 var ch=function(f,g){return function(o){var v=f(o);return v<0?-1:g(v)}};
 var id=function(o){return o};
 /* item 10 e itens com texto ou layout alterado nesta revisão: edições salvas antes nesses slides são descartadas para não trazer de volta o conteúdo antigo; as notas salvas continuam (lista = data-oid na versão de origem) */
 var src=[['palestra-h4-v1::v3.3-20261120-revfinal4',id,id,[0,2,17,19,25,27,31,32,33]],['palestra-h4-v1::v3.3-20261120-revfinal3',id,id,[0,2,5,10,17,19,25,27,31,32,33]],['palestra-h4-v1::v3.3-20261120-revfinal2',m35o,m35c,[0,2,5,10,17,19,26,28,32,33,34]],['palestra-h4-v1::v3.3-20261120-revfinal',ch(m36,m35o),ch(m36,m35c),[0,2,5,10,15,17,18,20,27,29,33,34,35]],['palestra-h4-v1::v3.3-20261120-ordem7',ch(m39,m35o),ch(m39,m35c),[0,2,5,13,18,20,21,23,30,32,36,37,38]]];
-for(var q=0;q<src.length;q++){var old=localStorage.getItem(src[q][0]);if(!old)continue;var st=JSON.parse(old)||{},fo=src[q][1],fc=src[q][2],dr={s:src[q][3],n:[]},ns={};Object.keys(st).forEach(function(k){if(k!=='s'&&k!=='n'&&k!=='o')ns[k]=st[k]});['s','n'].forEach(function(k){ns[k]={};Object.keys(st[k]||{}).forEach(function(o){var m=dr[k].indexOf(+o)>=0?-1:fc(+o);if(m>=0)ns[k][m]=st[k][o]})});if(Array.isArray(st.o)){ns.o=st.o.map(function(o){return fo(+o)}).filter(function(v){return v>=0})}localStorage.setItem(KEY,JSON.stringify(ns));return}}catch(e){}})();
+function mig(q,st){st=st||{};var fo=src[q][1],fc=src[q][2],dr={s:src[q][3],n:[]},ns={};Object.keys(st).forEach(function(k){if(k!=='s'&&k!=='n'&&k!=='o')ns[k]=st[k]});['s','n'].forEach(function(k){ns[k]={};Object.keys(st[k]||{}).forEach(function(o){var m=dr[k].indexOf(+o)>=0?-1:fc(+o);if(m>=0)ns[k][m]=st[k][o]})});if(Array.isArray(st.o)){ns.o=st.o.map(function(o){return fo(+o)}).filter(function(v){return v>=0})}return ns}
+return {src:src,mig:mig};})();
+(function(){try{if(localStorage.getItem(KEY))return;for(var q=0;q<MIG.src.length;q++){var old=localStorage.getItem(MIG.src[q][0]);if(!old)continue;localStorage.setItem(KEY,JSON.stringify(MIG.mig(q,JSON.parse(old))));return}}catch(e){}})();
+/* v3.5: estado online salvo numa versão anterior do deck passa pela mesma migração */
+function migRemote(versao,st){if(!st||typeof st!=='object'||Array.isArray(st))return null;if(versao===REV)return st;var k='palestra-h4-v1::'+versao;for(var q=0;q<MIG.src.length;q++)if(MIG.src[q][0]===k)return MIG.mig(q,st);return null}
 var ORIG=JSON.parse(document.getElementById('orig').textContent);
 var QR=(function(){var q=document.querySelector('#canvas img.qr');return q?q.getAttribute('src'):''})();
 /* v3: imagens do "Restaurar original" vêm do DOM inicial (não duplica o peso do arquivo) */
@@ -453,7 +458,7 @@ function persist(){
     Object.keys(dirty).forEach(function(o){var e=byOid(o);if(e)st.s[o]=cleanInner(e.querySelector('.c'))});
     Object.keys(notesDirty).forEach(function(o){var e=byOid(o);if(e)st.n[o]=e.querySelector('aside.notes').innerHTML});
     if(isOrigOrder())delete st.o;else st.o=slides.map(oidOf);
-    try{localStorage.setItem(KEY,JSON.stringify(st));dirty={};notesDirty={};orderDirty=false;status('salvo · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}))}
+    try{localStorage.setItem(KEY,JSON.stringify(st));dirty={};notesDirty={};orderDirty=false;status('salvo · '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));remoteAfterLocal()}
     catch(e){status('não salvo');toast('Armazenamento local cheio (imagens grandes). Use “Salvar HTML” para guardar tudo.')}
   },350);
 }
@@ -463,10 +468,11 @@ function cleanInner(c){
   $$('[spellcheck]',k).forEach(function(e){e.removeAttribute('spellcheck')});
   return k.innerHTML;
 }
-function applyState(){
-  var st=loadState(); if(!st)return;
-  Object.keys(st.s||{}).forEach(function(i){if(slides[i])slides[i].querySelector('.c').innerHTML=st.s[i]});
-  Object.keys(st.n||{}).forEach(function(i){if(slides[i])slides[i].querySelector('aside.notes').innerHTML=st.n[i]});
+function applyState(st){
+  if(st===undefined)st=loadState(); if(!st)return;
+  /* v3.5: chave = data-oid (byOid), vale também quando a ordem atual já não é a original */
+  Object.keys(st.s||{}).forEach(function(i){var e=byOid(i);if(e)e.querySelector('.c').innerHTML=st.s[i]});
+  Object.keys(st.n||{}).forEach(function(i){var e=byOid(i);if(e)e.querySelector('aside.notes').innerHTML=st.n[i]});
   if(st.o)applyOrder(st.o);
 }
 /* v3.4: ordem dos slides. arr = lista de data-oid na ordem desejada. */
@@ -786,7 +792,7 @@ $('#bRestore').addEventListener('click',function(){
   var curEl=slides[cur];applyOrder(slides.map(function(s,i){return i}));cur=slides.indexOf(curEl);
   slides.forEach(function(s){var o=oidOf(s);s.querySelector('.c').innerHTML=restoreImgs(ORIG[o].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[o].n});
   try{localStorage.removeItem(KEY)}catch(e){}
-  dirty={};notesDirty={};orderDirty=false;setEditable(!isFs());buildThumbs();go(cur);markCur();showNotes();updateOrderBtn();status('original');toast('Deck original restaurado');
+  dirty={};notesDirty={};orderDirty=false;setEditable(!isFs());buildThumbs();go(cur);markCur();showNotes();updateOrderBtn();status('original');toast('Deck original restaurado');remoteClear();
 });
 
 /* ---------- v3.4: mudar a ordem arrastando as miniaturas (só no modo de edição, fora da tela cheia) ---------- */
@@ -910,6 +916,103 @@ strip.addEventListener('contextmenu',function(e){if(dg&&dg.touch)e.preventDefaul
 document.addEventListener('keydown',function(e){if(dg&&dg.on&&e.key==='Escape'){e.preventDefault();e.stopPropagation();dragEnd(true)}},true);
 document.addEventListener('fullscreenchange',function(){if(dg)dragEnd(true)});
 
+/* ---------- v3.5: estado salvo online (Supabase Viral Data, tabela public.palestra_estado) ----------
+   Leitura pública; escrita só pela RPC salvar_palestra_estado, que confere a senha de edição.
+   Sem rede (ou sem a tabela), tudo continua salvando só neste navegador, como antes. */
+var RM={url:'https://qclvrddrqulgfzccndnl.supabase.co',key:'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFjbHZyZGRycXVsZ2Z6Y2NuZG5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjU0NjY2NzMsImV4cCI6MjA4MTA0MjY3M30.nIrCbMmkaRXf5OhIkIVUIHf-u-F4twYZIQX_aKlctl8'};
+var RM_ON=/^https?:$/.test(location.protocol)&&/(^|\.)viralmindlabs\.com$|^localhost$|^127\.0\.0\.1$/.test(location.hostname)&&!!window.fetch&&!/[?&]remoto=0(&|$)/.test(location.search);
+var PWK='palestra-senha-edicao', SYK=KEY+'::sync', NOPW='palestra-sem-online', BKK=KEY+'::backup-local';
+var rmBusy=false, rmAgain=false, rmT, rmGen=0;
+function syncGet(){try{return JSON.parse(localStorage.getItem(SYK)||'null')||{}}catch(e){return {}}}
+function syncSet(o){try{localStorage.setItem(SYK,JSON.stringify(o||{}))}catch(e){}}
+function hhmm(d){var x=d?new Date(d):new Date();if(isNaN(x))x=new Date();return x.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function sameAt(a,b){return !!a&&!!b&&Date.parse(a)===Date.parse(b)}
+function rmFetch(path,opt,ms){
+  opt=opt||{};ms=ms||3000;
+  var h={apikey:RM.key,Authorization:'Bearer '+RM.key};if(opt.body)h['Content-Type']='application/json';
+  var ctl=window.AbortController?new AbortController():null, tm;
+  var to=new Promise(function(_,rej){tm=setTimeout(function(){if(ctl)ctl.abort();rej(new Error('timeout'))},ms)});
+  var req=fetch(RM.url+path,{method:opt.method||'GET',headers:h,body:opt.body,signal:ctl?ctl.signal:undefined,cache:'no-store'}).then(function(r){
+    return r.text().then(function(x){var j=null;try{j=x?JSON.parse(x):null}catch(e){}
+      if(!r.ok){var er=new Error((j&&j.message)||('http '+r.status));er.status=r.status;er.code=j&&j.code;throw er}return j})});
+  return Promise.race([req,to]).then(function(v){clearTimeout(tm);return v},function(e){clearTimeout(tm);throw e});
+}
+/* imagens originais do deck e o QR viram marcadores (__IMGk__ / __QR__) no envio: o estado online fica leve */
+function packHtml(h){h=String(h);Object.keys(IMGS).forEach(function(k){var v=IMGS[k];if(v&&v.length>200&&h.indexOf(v)>=0)h=h.split(v).join('__IMG'+k+'__')});if(QR&&QR.length>200&&h.indexOf(QR)>=0)h=h.split(QR).join('__QR__');return h}
+function unpackHtml(h){return restoreImgs(String(h).split('__QR__').join(QR))}
+function mapSN(st,f){var o={};Object.keys(st).forEach(function(k){o[k]=st[k]});['s','n'].forEach(function(k){o[k]={};Object.keys(st[k]||{}).forEach(function(i){o[k][i]=f(st[k][i])})});return o}
+function hasPw(){try{return !!localStorage.getItem(PWK)}catch(e){return false}}
+function askPw(force,msg){
+  var p=null;try{p=localStorage.getItem(PWK)}catch(e){}if(p)return p;
+  var no=false;try{no=sessionStorage.getItem(NOPW)==='1'}catch(e){}if(no&&!force)return null;
+  p=window.prompt(msg||'Senha de edição para salvar online (a palestra fica igual em qualquer computador).\nCancele para salvar só neste navegador.','');
+  p=(p||'').trim();
+  if(!p){try{sessionStorage.setItem(NOPW,'1')}catch(e){}return null}
+  try{localStorage.setItem(PWK,p);sessionStorage.removeItem(NOPW)}catch(e){}
+  return p;
+}
+function rmStatus(m,off){var e=$('#status');e.classList.toggle('rm-off',!!off);e.title=off?'Clique para tentar salvar online de novo':'';status(m)}
+function rmFail(e,what){
+  if(e&&(e.code==='28P01'||/senha_invalida/.test(e.message||''))){try{localStorage.removeItem(PWK)}catch(x){}rmStatus('senha errada · só neste navegador',1);toast('Senha de edição errada. Clique no status para tentar de novo.')}
+  else if(e&&(e.status===404||e.code==='PGRST202'||e.code==='PGRST205'||e.code==='42P01'))rmStatus('online indisponível · só neste navegador',1);
+  else{rmStatus('falhou online · salvo só neste navegador',1);toast('Não consegui '+what+' online. Ficou só neste navegador; clique no status para tentar de novo.')}
+}
+/* chamado depois de cada salvamento local */
+function remoteAfterLocal(){if(!RM_ON)return;rmGen++;var sy=syncGet();sy.pend=1;syncSet(sy);clearTimeout(rmT);rmT=setTimeout(function(){remoteSave(false)},1200)}
+function remoteSave(force){
+  if(!RM_ON)return;
+  if(rmBusy){rmAgain=true;return}
+  var st=loadState();if(!st)return;
+  var pw=askPw(force);if(!pw){rmStatus('salvo só neste navegador',1);return}
+  var g=rmGen;rmBusy=true;status('salvando online…');
+  rmFetch('/rest/v1/rpc/salvar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw,p_versao:REV,p_estado:mapSN(st,packHtml)})},25000)
+  .then(function(at){var sy=syncGet();sy.at=at;if(g===rmGen)sy.pend=0;syncSet(sy);rmStatus('salvo online · '+hhmm())},function(e){rmFail(e,'salvar')})
+  .then(function(){rmBusy=false;if(rmAgain){rmAgain=false;remoteSave(false)}});
+}
+/* "Restaurar original": apaga também o estado online (pede a senha se ainda não tiver) */
+function remoteClear(){
+  if(!RM_ON)return;clearTimeout(rmT);rmGen++;
+  var pw=askPw(true,'Senha de edição para restaurar o original também online (em todos os computadores).\nCancele para restaurar só neste navegador.');
+  if(!pw){var sy=syncGet();sy.pend=1;syncSet(sy);rmStatus('original só neste navegador',1);return}
+  rmBusy=true;status('restaurando online…');
+  rmFetch('/rest/v1/rpc/limpar_palestra_estado',{method:'POST',body:JSON.stringify({p_senha:pw})},8000)
+  .then(function(){syncSet({});rmStatus('original · online também')},function(e){var sy=syncGet();sy.pend=1;syncSet(sy);rmFail(e,'restaurar')})
+  .then(function(){rmBusy=false});
+}
+function resetToOrig(){
+  applyOrder(slides.map(function(s,i){return i}));
+  slides.forEach(function(s){var o=oidOf(s);s.querySelector('.c').innerHTML=restoreImgs(ORIG[o].c.split('__QR__').join(QR));s.querySelector('aside.notes').innerHTML=ORIG[o].n});
+}
+function busyEditing(){return rmBusy||Object.keys(dirty).length>0||Object.keys(notesDirty).length>0||orderDirty||editing()||!!dg}
+function rebuildAfter(curEl,msg){
+  cur=Math.max(0,slides.indexOf(curEl));
+  setEditable(!isFs());buildThumbs();renumberThumbs();go(cur);markCur();showNotes();updateOrderBtn();rmStatus(msg);
+}
+/* ao abrir: busca o estado online (até 3 s). Sem rede: fica o que já estava (navegador ou original). */
+function remoteLoad(){
+  if(!RM_ON)return;
+  rmFetch('/rest/v1/palestra_estado?id=eq.palestra&select=versao,estado,updated_at',null,3000).then(function(rows){
+    var row=Array.isArray(rows)?rows[0]:null, sy=syncGet(), curEl;
+    if(!row){
+      /* nada online. Se este navegador já tinha sincronizado, o original foi restaurado em outro aparelho */
+      if(sy.at&&!sy.pend&&!busyEditing()){curEl=slides[cur];finishAnims();resetToOrig();try{localStorage.removeItem(KEY)}catch(e){}syncSet({});rebuildAfter(curEl,'original (online)')}
+      else if(sy.pend&&hasPw())remoteSave(false);
+      return;
+    }
+    if(sameAt(sy.at,row.updated_at)){if(sy.pend&&hasPw())remoteSave(false);return}
+    var st=migRemote(row.versao,row.estado);if(!st)return;
+    if(busyEditing()){toast('Há uma versão online mais nova. Recarregue a página para carregar.');return}
+    var loc=null;try{loc=localStorage.getItem(KEY)}catch(e){}
+    if(loc&&(sy.pend||!sy.at)){try{localStorage.setItem(BKK,loc)}catch(e){}if(sy.pend)toast('Carreguei a versão online mais recente. O que estava só neste navegador ficou guardado num backup.')}
+    st=mapSN(st,unpackHtml);
+    curEl=slides[cur];finishAnims();resetToOrig();applyState(st);
+    try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
+    syncSet({at:row.updated_at});
+    rebuildAfter(curEl,'online · '+hhmm(row.updated_at));
+  }).catch(function(){if(syncGet().pend)rmStatus('salvo só neste navegador',1)});
+}
+$('#status').addEventListener('click',function(){if(RM_ON&&syncGet().pend)remoteSave(true)});
+
 /* ---------- init ---------- */
 applyState();
 setEditable(true);
@@ -923,6 +1026,7 @@ layout();
 if(document.fonts&&document.fonts.ready)document.fonts.ready.then(function(){layout();thumbs.forEach(function(t,i){refreshThumb(i)})});
 window.addEventListener('hashchange',function(){var v=parseInt((location.hash||'').slice(1),10);if(v>=1&&v<=N&&v-1!==cur)go(v-1,v-1>cur?1:-1)});
 window.addEventListener('beforeunload',function(){clearTimeout(sT)});
+remoteLoad();
 })();
 </script>
 </body>
