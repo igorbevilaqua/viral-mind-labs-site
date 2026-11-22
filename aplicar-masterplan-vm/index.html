@@ -82,7 +82,7 @@
     <section class="step is-current" data-step="welcome">
       <div class="col col-center">
         <h1 class="welcome-title">Master Plan <span class="mark">VM<svg viewBox="0 0 220 80" preserveAspectRatio="none" aria-hidden="true"><path d="M16 46 C 22 16, 188 8, 202 34 C 214 56, 176 74, 36 68 C 10 64, 4 36, 24 24" fill="none" stroke="#F5D03B" stroke-width="3" stroke-linecap="round"/></svg></span></h1>
-        <p class="support">Responda 10 perguntas rápidas, uma de cada vez. Com elas, nosso time de estratégia monta a análise e o plano de viralização de autoridade do seu perfil.</p>
+        <p class="support">Responda 11 perguntas rápidas, uma de cada vez. Com elas, nosso time de estratégia monta a análise e o plano de viralização de autoridade do seu perfil.</p>
         <p class="support">Cada resposta é lida pela nossa equipe. Em até 7 dias você recebe o retorno.</p>
         <button type="button" class="btn" id="start">Iniciar</button>
       </div>
@@ -206,7 +206,17 @@
       </div>
     </section>
 
-
+    <section class="step is-below" data-step="inspiracoes">
+      <div class="col">
+        <h2 class="q">Quem são as pessoas relevantes que inspiram você no seu nicho?</h2>
+        <textarea id="inspiracoes" name="inspiracoes" class="line" rows="3" maxlength="1000" placeholder="Nomes ou @ de criadores, empresas ou referências (opcional)"></textarea>
+        <p class="err" id="err-inspiracoes" data-err="inspiracoes" hidden></p>
+        <div class="actions">
+          <button type="button" class="ok" data-go>OK</button>
+          <span class="hint">Opcional · Enter continua · Shift+Enter quebra a linha</span>
+        </div>
+      </div>
+    </section>
 
     <section class="step is-below" data-step="publico_desejado">
       <div class="col">
@@ -260,6 +270,6 @@
 <script src="/attribution.js?v=16"></script>
 <script src="/aplicar/paises.js"></script>
 <script src="/aplicar/config.js"></script>
-<script src="masterplan.js?v=4"></script>
+<script src="masterplan.js?v=5"></script>
 </body>
 </html>
