@@ -12,12 +12,15 @@
     "produto_servico",
     "instagram",
     "reconhecido",
+    "inspiracoes",
     "publico_desejado",
     "consent",
     "success",
   ];
   const TEXT_FIELDS = ["nome", "email", "empresa", "papel", "produto_servico", "instagram"];
   const TEXTAREAS = ["reconhecido", "publico_desejado"];
+  // Textareas opcionais: mesmo comportamento de teclado, sem exigir resposta.
+  const OPTIONAL_TEXTAREAS = ["inspiracoes"];
   const TABLE = "site_master_plan_applications";
 
   // Texto da tela de sucesso. O final do parágrafo ainda será confirmado com o Igor.
@@ -339,6 +342,8 @@
       tiktok: null,
       nao_tem_tiktok: null,
       reconhecido: document.getElementById("reconhecido").value.trim(),
+      // Pergunta nova em 21/11 (Igor), opcional: vazio vai como null.
+      inspiracoes: document.getElementById("inspiracoes").value.trim().slice(0, 1000) || null,
       // Perguntas retiradas em 20/11 (decisão do Igor). As colunas ficam no banco,
       // opcionais depois da migration; enviamos null de forma explícita.
       primeira_impressao: null,
@@ -474,7 +479,7 @@
     });
   });
 
-  TEXTAREAS.forEach((name) => {
+  TEXTAREAS.concat(OPTIONAL_TEXTAREAS).forEach((name) => {
     const el = document.getElementById(name);
     el.addEventListener("input", () => {
       if (el.classList.contains("invalid")) validate(name, "quiet");
